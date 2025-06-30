@@ -1,5 +1,7 @@
-import create from 'zustand';
-import { persist } from 'zustand/middleware';
+'use client';
+
+import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
 const useCartStore = create(
   persist(
@@ -25,7 +27,10 @@ const useCartStore = create(
       },
       clearCart: () => set({ cartItems: [] }),
     }),
-    { name: 'cart-storage', getStorage: () => localStorage }
+    {
+      name: 'cart-storage',
+      storage: createJSONStorage(() => localStorage),
+    }
   )
 );
 

@@ -1,6 +1,6 @@
-import { connectToDatabase, Product } from '../../../lib/db';
-import ProductDetails from '../../../components/ProductDetails';
-import RecommendationList from '../../../components/RecommendationList';
+import { connectToDatabase, Product } from '@/lib/db';
+import ProductDetails from '@/components/ProductDetails';
+import RecommendationList from '@/components/RecommendationList';
 
 export default async function ProductPage({ params }) {
   await connectToDatabase();

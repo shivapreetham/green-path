@@ -1,13 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import useCartStore from '../../store/cartStore';
-import CartItem from '../../components/CartItem';
+import useCartStore from '@/store/cartStore';
+import CartItem from '@/components/CartItem';
 
 export default function CartPage() {
   const { cartItems, clearCart } = useCartStore();
   const [products, setProducts] = useState([]);
-
   useEffect(() => {
     async function fetchCartProducts() {
       const fetchedProducts = await Promise.all(

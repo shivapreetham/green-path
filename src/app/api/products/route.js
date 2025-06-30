@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase, Product } from '../../../lib/db';
+import { connectToDatabase, Product } from '@/lib/db';
 
 export async function GET() {
   await connectToDatabase();

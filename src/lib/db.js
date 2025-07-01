@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI || 'MONGODB_URI = mongodb+srv://2005shadowme:S5quug2t2WfmiabD@shatterbox.qksgz.mongodb.net/green-path?retryWrites=true&w=majority';
+const MONGODB_URI ='mongodb+srv://2005shadowme:S5quug2t2WfmiabD@shatterbox.qksgz.mongodb.net/green-path?retryWrites=true&w=majority';
 
 if (!MONGODB_URI) {
   throw new Error('Please define the MONGODB_URI environment variable');
@@ -13,7 +13,11 @@ if (!cached) {
 }
 
 export async function connectToDatabase() {
-  if (cached.conn) return cached.conn;
+  console.log('MONGODB_URI', MONGODB_URI);
+  if (cached.conn){
+    console.log('already connected');
+     return cached.conn;
+  }
 
   if (!cached.promise) {
     const opts = { bufferCommands: false };
@@ -28,7 +32,7 @@ const productSchema = new mongoose.Schema({
   description: { type: String, required: true },
   price: { type: Number, required: true },
   category: { type: String, required: true },
-  carbonFootprint: { type: Number, required: true }, // in kg CO2e
+  carbonFootprint: { type: Number, required: true },
   imageUrl: { type: String, required: true },
 });
 

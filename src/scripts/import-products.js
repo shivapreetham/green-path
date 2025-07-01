@@ -1,7 +1,7 @@
 import { parse } from 'csv-parse';
 import fs from 'fs';
 import mongoose from 'mongoose';
-import { Product } from '../lib/db';
+import { Product } from '@/lib/db';
 
 async function importProducts() {
   await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/ecommerce');

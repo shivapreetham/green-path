@@ -5,6 +5,11 @@ import useCartStore from '@/store/cartStore';
 export default function ProductDetails({ product }) {
   const { addItem } = useCartStore();
 
+  const handleAddToCart = () => {
+    addItem(product);
+    console.log('Added to cart:', product.name); // For debugging
+  };
+
   return (
     <div className="flex flex-col md:flex-row gap-4">
       <img src={product.imageUrl} alt={product.name} className="w-full md:w-1/2 h-64 object-cover" />
@@ -12,9 +17,8 @@ export default function ProductDetails({ product }) {
         <h1 className="text-2xl font-bold">{product.name}</h1>
         <p className="text-gray-600">{product.description}</p>
         <p className="text-lg font-semibold">${product.price}</p>
-        <p>Carbon Footprint: {product.carbonFootprint} kg CO2e</p>
         <button
-          onClick={() => addItem(product)}
+          onClick={handleAddToCart}
           className="bg-green-500 text-white px-4 py-2 rounded mt-2"
         >
           Add to Cart

@@ -37,7 +37,7 @@ export async function GET(request) {
       .lean();
 
     const total = await Product.countDocuments(query);
-
+    console.log('Products API Response:', products);
     return NextResponse.json({
       products,
       pagination: {

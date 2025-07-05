@@ -6,7 +6,7 @@ import Link from 'next/link';
 import useCartStore from '@/store/cartStore';
 
 export default function CartPage() {
-  const { cart, removeFromCart, updateQuantity, loading } = useCartStore();
+  const { cart, removeFromCart, updateQuantity, isLoading } = useCartStore();
   const [recommendations, setRecommendations] = useState([]);
   const [showRecommendations, setShowRecommendations] = useState(true);
 
@@ -50,15 +50,15 @@ export default function CartPage() {
 
   const calculatePotentialSavings = () => {
     if (!recommendations.length) return 0;
-    
     const cartCarbonScore = cart?.totalCarbonScore || 0;
-    const bestAlternativeScore = recommendations.reduce((min, rec) => 
-      Math.min(min, rec.carbonScore), cartCarbonScore);
-    
+    const bestAlternativeScore = recommendations.reduce(
+      (min, rec) => Math.min(min, rec.carbonScore),
+      cartCarbonScore
+    );
     return Math.max(0, cartCarbonScore - bestAlternativeScore);
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -115,7 +115,6 @@ export default function CartPage() {
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  
                   <div className="flex-1">
                     <h3 className="font-semibold text-gray-800">{item.productId.name}</h3>
                     <p className="text-gray-600 text-sm">{item.productId.brand}</p>
@@ -128,7 +127,6 @@ export default function CartPage() {
                       </span>
                     </div>
                   </div>
-
                   <div className="flex items-center gap-3">
                     <div className="flex items-center border rounded-lg">
                       <button
@@ -145,7 +143,6 @@ export default function CartPage() {
                         +
                       </button>
                     </div>
-                    
                     <button
                       onClick={() => removeFromCart(item.productId._id)}
                       className="text-red-600 hover:text-red-700 p-2"
@@ -156,8 +153,6 @@ export default function CartPage() {
                 </div>
               </div>
             ))}
-
-            {/* Cart Summary */}
             <div className="bg-white rounded-xl shadow-lg p-6">
               <div className="space-y-3">
                 <div className="flex justify-between">
@@ -175,13 +170,11 @@ export default function CartPage() {
                   <span className="text-green-600">${cart.totalAmount.toFixed(2)}</span>
                 </div>
               </div>
-              
               <button className="w-full bg-green-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-green-700 transition-colors mt-6">
                 Proceed to Checkout
               </button>
             </div>
           </div>
-
           {/* Recommendations Sidebar */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl shadow-lg p-6 sticky top-8">
@@ -194,7 +187,6 @@ export default function CartPage() {
                   {showRecommendations ? '−' : '+'}
                 </button>
               </div>
-
               {showRecommendations && (
                 <>
                   {calculatePotentialSavings() > 0 && (
@@ -213,7 +205,6 @@ export default function CartPage() {
                       </p>
                     </div>
                   )}
-
                   <div className="space-y-4">
                     {recommendations.slice(0, 5).map((rec) => (
                       <div key={rec._id} className="border border-gray-200 rounded-lg p-4">
@@ -230,14 +221,12 @@ export default function CartPage() {
                             <p className="text-gray-600 text-xs">{rec.brand}</p>
                           </div>
                         </div>
-                        
                         <div className="flex justify-between items-center mb-3">
                           <span className="text-sm font-bold text-green-600">${rec.price?.toFixed(2)}</span>
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${getCarbonScoreColor(rec.carbonScore)}`}>
-                            {rec.carbonScore}/100
+                            {rec.cancelCarbonScore}/100
                           </span>
                         </div>
-
                         {rec.carbonScore < cart.totalCarbonScore && (
                           <div className="bg-green-50 border border-green-200 rounded p-2 mb-3">
                             <p className="text-xs text-green-800">
@@ -245,7 +234,6 @@ export default function CartPage() {
                             </p>
                           </div>
                         )}
-
                         <div className="flex gap-2">
                           <Link
                             href={`/products/${rec._id}`}
@@ -254,10 +242,7 @@ export default function CartPage() {
                             View
                           </Link>
                           <button
-                            onClick={() => {
-                              // Add to cart functionality
-                              useCartStore.getState().addToCart(rec._id, 1);
-                            }}
+                            onClick={() => useCartStore.getState().addToCart(rec._id, 1)}
                             className="bg-green-100 text-green-600 py-2 px-3 rounded text-xs font-medium hover:bg-green-200 transition-colors"
                           >
                             Add
@@ -266,7 +251,6 @@ export default function CartPage() {
                       </div>
                     ))}
                   </div>
-
                   {recommendations.length === 0 && (
                     <div className="text-center py-8">
                       <div className="text-gray-400 text-4xl mb-2">🔍</div>

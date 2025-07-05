@@ -15,7 +15,20 @@ export default function ProductDetailPage() {
   const [error, setError] = useState('');
   const [quantity, setQuantity] = useState(1);
 
-  const { addToCart, isLoading: cartLoading } = useCartStore();
+  const { 
+    addToCart, 
+    isLoading: cartLoading, 
+    error: cartError,
+    initializeSession,
+    fetchCart,
+    clearError 
+  } = useCartStore();
+
+  // Initialize cart session and fetch cart on component mount
+  useEffect(() => {
+    initializeSession();
+    fetchCart();
+  }, [initializeSession, fetchCart]);
 
   useEffect(() => {
     fetchProduct();
@@ -24,11 +37,9 @@ export default function ProductDetailPage() {
   const fetchProduct = async () => {
     setLoading(true);
     setError('');
-
     try {
       const response = await fetch(`/api/products/${params.id}`);
       const data = await response.json();
-
       if (response.ok) {
         setProduct(data.product);
         setRecommendations(data.recommendations || []);
@@ -36,6 +47,7 @@ export default function ProductDetailPage() {
         setError(data.error || 'Product not found');
       }
     } catch (error) {
+      console.error('Fetch product error:', error);
       setError('Failed to fetch product');
     } finally {
       setLoading(false);
@@ -43,7 +55,13 @@ export default function ProductDetailPage() {
   };
 
   const handleAddToCart = async () => {
-    await addToCart(params.id, quantity);
+    try {
+      clearError();
+      await addToCart(params.id, quantity);
+      console.log('Product added to cart successfully');
+    } catch (error) {
+      console.error('Add to cart error:', error);
+    }
   };
 
   const getCarbonScoreColor = (score) => {
@@ -94,7 +112,6 @@ export default function ProductDetailPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
-        {/* Breadcrumb */}
         <nav className="mb-8">
           <ol className="flex items-center space-x-2 text-sm text-gray-600">
             <li><Link href="/" className="hover:text-green-600">Home</Link></li>
@@ -104,9 +121,18 @@ export default function ProductDetailPage() {
             <li className="text-gray-800 font-medium">{product?.name}</li>
           </ol>
         </nav>
-
+        {cartError && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-600">{cartError}</p>
+            <button 
+              onClick={clearError}
+              className="text-red-600 underline text-sm mt-2"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {/* Product Image */}
           <div className="space-y-4">
             <div className="aspect-square bg-white rounded-xl shadow-lg overflow-hidden">
               <img
@@ -116,8 +142,6 @@ export default function ProductDetailPage() {
               />
             </div>
           </div>
-
-          {/* Product Details */}
           <div className="space-y-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-800 mb-2">{product?.name}</h1>
@@ -131,13 +155,10 @@ export default function ProductDetailPage() {
                 </span>
               </div>
             </div>
-
             <div className="border-t pt-6">
-              <h3 className="text-lg font-semibold mb-3">Description</h3>
+              <h3 className="text-lg font-semibold mb-1">Description</h3>
               <p className="text-gray-600 leading-relaxed">{product?.description}</p>
             </div>
-
-            {/* Specifications */}
             {product?.specifications && Object.keys(product.specifications).length > 0 && (
               <div className="border-t pt-6">
                 <h3 className="text-lg font-semibold mb-3">Specifications</h3>
@@ -151,8 +172,6 @@ export default function ProductDetailPage() {
                 </div>
               </div>
             )}
-
-            {/* Add to Cart */}
             <div className="border-t pt-6">
               <div className="flex items-center gap-4 mb-4">
                 <label className="text-sm font-medium text-gray-700">Quantity:</label>
@@ -172,7 +191,6 @@ export default function ProductDetailPage() {
                   </button>
                 </div>
               </div>
-
               <div className="flex gap-4">
                 <button
                   onClick={handleAddToCart}
@@ -188,7 +206,6 @@ export default function ProductDetailPage() {
                   View Cart
                 </Link>
               </div>
-
               {product?.stock === 0 && (
                 <p className="text-red-600 text-sm mt-2">Out of stock</p>
               )}
@@ -198,8 +215,6 @@ export default function ProductDetailPage() {
             </div>
           </div>
         </div>
-
-        {/* Recommendations */}
         {recommendations.length > 0 && (
           <div className="mt-16">
             <h2 className="text-2xl font-bold text-gray-800 mb-8">🌱 Eco-Friendly Alternatives</h2>
@@ -216,14 +231,12 @@ export default function ProductDetailPage() {
                   <div className="p-6">
                     <h3 className="font-semibold text-gray-800 mb-2">{rec.name}</h3>
                     <p className="text-gray-600 text-sm mb-3">{rec.brand}</p>
-                    
                     <div className="flex justify-between items-center mb-3">
                       <span className="text-xl font-bold text-green-600">${rec.price?.toFixed(2)}</span>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${getCarbonScoreColor(rec.carbonScore)}`}>
                         {rec.carbonScore}/100
                       </span>
                     </div>
-
                     {calculateCarbonSavings(product?.carbonScore, rec.carbonScore) > 0 && (
                       <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
                         <div className="flex items-center gap-2">
@@ -234,7 +247,6 @@ export default function ProductDetailPage() {
                         </div>
                       </div>
                     )}
-
                     <div className="flex gap-2">
                       <Link
                         href={`/products/${rec._id}`}
@@ -244,7 +256,8 @@ export default function ProductDetailPage() {
                       </Link>
                       <button
                         onClick={() => addToCart(rec._id, 1)}
-                        className="bg-green-100 text-green-600 py-2 px-4 rounded-lg text-sm font-medium hover:bg-green-200 transition-colors"
+                        className="bg-green-100 Salternative
+                        text-green-600 py-2 px-4 rounded-lg text-sm font-medium hover:bg-green-200 transition-colors"
                       >
                         Add to Cart
                       </button>

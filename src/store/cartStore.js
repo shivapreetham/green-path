@@ -1,52 +1,50 @@
 // store/cartStore.js
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-
-// Generate session ID
-const generateSessionId = () => {
-  return Date.now().toString(36) + Math.random().toString(36).substr(2);
-};
+import { v4 as uuidv4 } from 'uuid';
 
 const useCartStore = create(
   persist(
     (set, get) => ({
       sessionId: null,
-      items: [],
-      totalAmount: 0,
-      totalCarbonScore: 0,
-      estimatedCarbonSavings: 0,
+      cart: { items: [], totalAmount: 0, totalCarbonScore: 0, estimatedCarbonSavings: 0 },
       isLoading: false,
       error: null,
       recommendations: [],
 
       // Initialize session
       initializeSession: () => {
-        const { sessionId } = get();
+        let sessionId = get().sessionId;
         if (!sessionId) {
-          set({ sessionId: generateSessionId() });
+          sessionId = uuidv4();
+          set({ sessionId });
         }
+        return sessionId;
       },
 
       // Fetch cart from server
       fetchCart: async () => {
-        const { sessionId } = get();
-        if (!sessionId) return;
+        let { sessionId } = get();
+        if (!sessionId) {
+          sessionId = get().initializeSession();
+        }
 
         set({ isLoading: true, error: null });
         try {
           const response = await fetch(`/api/cart?sessionId=${sessionId}`);
           const data = await response.json();
-          
           if (response.ok) {
             set({
-              items: data.items || [],
-              totalAmount: data.totalAmount || 0,
-              totalCarbonScore: data.totalCarbonScore || 0,
-              estimatedCarbonSavings: data.estimatedCarbonSavings || 0,
-              isLoading: false
+              cart: {
+                items: data.items || [],
+                totalAmount: data.totalAmount || 0,
+                totalCarbonScore: data.totalCarbonScore || 0,
+                estimatedCarbonSavings: data.estimatedCarbonSavings || 0,
+              },
+              isLoading: false,
             });
           } else {
-            set({ error: data.error, isLoading: false });
+            set({ error: data.error || 'Failed to fetch cart', isLoading: false });
           }
         } catch (error) {
           set({ error: 'Failed to fetch cart', isLoading: false });
@@ -55,78 +53,68 @@ const useCartStore = create(
 
       // Add item to cart
       addToCart: async (productId, quantity = 1) => {
-        const { sessionId } = get();
-        if (!sessionId) return;
+        let { sessionId } = get();
+        if (!sessionId) {
+          sessionId = get().initializeSession();
+        }
 
         set({ isLoading: true, error: null });
         try {
           const response = await fetch('/api/cart', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              sessionId,
-              productId,
-              quantity,
-            }),
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId, productId, quantity }),
           });
-
           const data = await response.json();
-          
           if (response.ok) {
             set({
-              items: data.items || [],
-              totalAmount: data.totalAmount || 0,
-              totalCarbonScore: data.totalCarbonScore || 0,
-              estimatedCarbonSavings: data.estimatedCarbonSavings || 0,
-              isLoading: false
+              cart: {
+                items: data.items || [],
+                totalAmount: data.totalAmount || 0,
+                totalCarbonScore: data.totalCarbonScore || 0,
+                estimatedCarbonSavings: data.estimatedCarbonSavings || 0,
+              },
+              isLoading: false,
             });
-            
-            // Fetch updated recommendations
             get().fetchCartRecommendations();
           } else {
-            set({ error: data.error, isLoading: false });
+            set({ error: data.error || 'Failed to add to cart', isLoading: false });
+            throw new Error(data.error);
           }
         } catch (error) {
-          set({ error: 'Failed to add to cart', isLoading: false });
+          set({ error: error.message || 'Failed to add to cart', isLoading: false });
+          throw error;
         }
       },
 
       // Update item quantity
       updateQuantity: async (productId, quantity) => {
-        const { sessionId } = get();
-        if (!sessionId) return;
+        let { sessionId } = get();
+        if (!sessionId) {
+          sessionId = get().initializeSession();
+        }
 
         set({ isLoading: true, error: null });
         try {
           const response = await fetch('/api/cart', {
             method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              sessionId,
-              productId,
-              quantity,
-            }),
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId, productId, quantity }),
           });
-
           const data = await response.json();
-          
           if (response.ok) {
             set({
-              items: data.items || [],
-              totalAmount: data.totalAmount || 0,
-              totalCarbonScore: data.totalCarbonScore || 0,
-              estimatedCarbonSavings: data.estimatedCarbonSavings || 0,
-              isLoading: false
+              cart: {
+                items: data.items || [],
+                totalAmount: data.totalAmount || 0,
+                totalCarbonScore: data.totalCarbonScore || 0,
+                estimatedCarbonSavings: data.estimatedCarbonSavings || 0,
+              },
+              isLoading: false,
             });
-            
-            // Fetch updated recommendations
             get().fetchCartRecommendations();
           } else {
-            set({ error: data.error, isLoading: false });
+            set({ error: data.error || 'Failed to update cart', isLoading: false });
           }
         } catch (error) {
           set({ error: 'Failed to update cart', isLoading: false });
@@ -135,30 +123,30 @@ const useCartStore = create(
 
       // Remove item from cart
       removeFromCart: async (productId) => {
-        const { sessionId } = get();
-        if (!sessionId) return;
+        let { sessionId } = get();
+        if (!sessionId) {
+          sessionId = get().initializeSession();
+        }
 
         set({ isLoading: true, error: null });
         try {
           const response = await fetch(`/api/cart?sessionId=${sessionId}&productId=${productId}`, {
             method: 'DELETE',
           });
-
           const data = await response.json();
-          
           if (response.ok) {
             set({
-              items: data.items || [],
-              totalAmount: data.totalAmount || 0,
-              totalCarbonScore: data.totalCarbonScore || 0,
-              estimatedCarbonSavings: data.estimatedCarbonSavings || 0,
-              isLoading: false
+              cart: {
+                items: data.items || [],
+                totalAmount: data.totalAmount || 0,
+                totalCarbonScore: data.totalCarbonScore || 0,
+                estimatedCarbonSavings: data.estimatedCarbonSavings || 0,
+              },
+              isLoading: false,
             });
-            
-            // Fetch updated recommendations
             get().fetchCartRecommendations();
           } else {
-            set({ error: data.error, isLoading: false });
+            set({ error: data.error || 'Failed to remove from cart', isLoading: false });
           }
         } catch (error) {
           set({ error: 'Failed to remove from cart', isLoading: false });
@@ -167,28 +155,25 @@ const useCartStore = create(
 
       // Clear entire cart
       clearCart: async () => {
-        const { sessionId } = get();
-        if (!sessionId) return;
+        let { sessionId } = get();
+        if (!sessionId) {
+          sessionId = get().initializeSession();
+        }
 
         set({ isLoading: true, error: null });
         try {
           const response = await fetch(`/api/cart?sessionId=${sessionId}`, {
             method: 'DELETE',
           });
-
           const data = await response.json();
-          
           if (response.ok) {
             set({
-              items: [],
-              totalAmount: 0,
-              totalCarbonScore: 0,
-              estimatedCarbonSavings: 0,
+              cart: { items: [], totalAmount: 0, totalCarbonScore: 0, estimatedCarbonSavings: 0 },
               recommendations: [],
-              isLoading: false
+              isLoading: false,
             });
           } else {
-            set({ error: data.error, isLoading: false });
+            set({ error: data.error || 'Failed to clear cart', isLoading: false });
           }
         } catch (error) {
           set({ error: 'Failed to clear cart', isLoading: false });
@@ -197,15 +182,16 @@ const useCartStore = create(
 
       // Fetch cart recommendations
       fetchCartRecommendations: async () => {
-        const { sessionId } = get();
-        if (!sessionId) return;
+        let { sessionId } = get();
+        if (!sessionId) {
+          sessionId = get().initializeSession();
+        }
 
         try {
           const response = await fetch(`/api/recommendations?sessionId=${sessionId}`);
           const data = await response.json();
-          
           if (response.ok) {
-            set({ recommendations: data });
+            set({ recommendations: data.recommendations || [] });
           }
         } catch (error) {
           console.error('Failed to fetch cart recommendations:', error);
@@ -214,14 +200,14 @@ const useCartStore = create(
 
       // Get cart item count
       getItemCount: () => {
-        const { items } = get();
-        return items.reduce((total, item) => total + item.quantity, 0);
+        const { cart } = get();
+        return cart.items.reduce((total, item) => total + item.quantity, 0);
       },
 
       // Get cart total carbon savings potential
       getTotalCarbonSavings: () => {
         const { recommendations } = get();
-        return recommendations.reduce((total, rec) => total + rec.carbonSavings, 0);
+        return recommendations.reduce((total, rec) => total + (rec.carbonSavings || 0), 0);
       },
 
       // Clear error
@@ -231,6 +217,7 @@ const useCartStore = create(
       name: 'cart-storage',
       partialize: (state) => ({
         sessionId: state.sessionId,
+        cart: state.cart,
       }),
     }
   )

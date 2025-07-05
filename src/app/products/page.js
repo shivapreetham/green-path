@@ -35,16 +35,17 @@ export default function ProductsPage() {
     pages: 0
   });
 
-  const { addToCart, getItemCount, isLoading: cartLoading } = useCartStore();
+  const { addToCart, getItemCount, isLoading: cartLoading, initializeSession, fetchCart } = useCartStore();
 
   useEffect(() => {
+    initializeSession();
+    fetchCart();
     fetchProducts();
-  }, [filters, pagination.page]);
+  }, [filters, pagination.page, initializeSession, fetchCart]);
 
   const fetchProducts = async () => {
     setLoading(true);
     setError('');
-
     try {
       const params = new URLSearchParams({
         category: filters.category === 'All' ? '' : filters.category,
@@ -54,10 +55,8 @@ export default function ProductsPage() {
         page: pagination.page.toString(),
         limit: pagination.limit.toString()
       });
-
       const response = await fetch(`/api/products?${params}`);
       const data = await response.json();
-
       if (response.ok) {
         setProducts(data.products);
         setPagination(data.pagination);
@@ -90,7 +89,11 @@ export default function ProductsPage() {
   };
 
   const handleAddToCart = async (productId) => {
-    await addToCart(productId, 1);
+    try {
+      await addToCart(productId, 1);
+    } catch (error) {
+      console.error('Add to cart error:', error);
+    }
   };
 
   const getCarbonScoreColor = (score) => {
@@ -107,7 +110,6 @@ export default function ProductsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <div className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex justify-between items-center">
@@ -129,8 +131,6 @@ export default function ProductsPage() {
           </div>
         </div>
       </div>
-
-      {/* Filters */}
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -150,7 +150,6 @@ export default function ProductsPage() {
                 ))}
               </select>
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Search
@@ -163,7 +162,6 @@ export default function ProductsPage() {
                 placeholder="Search products..."
               />
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Sort By
@@ -179,7 +177,6 @@ export default function ProductsPage() {
                 <option value="createdAt">Date Added</option>
               </select>
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Order
@@ -195,15 +192,11 @@ export default function ProductsPage() {
             </div>
           </div>
         </div>
-
-        {/* Error Message */}
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
             <p className="text-red-600">{error}</p>
           </div>
         )}
-
-        {/* Loading State */}
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {Array(8).fill(0).map((_, index) => (
@@ -217,7 +210,6 @@ export default function ProductsPage() {
           </div>
         ) : (
           <>
-            {/* Products Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {products.map(product => (
                 <div key={product._id} className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
@@ -233,7 +225,6 @@ export default function ProductsPage() {
                       </span>
                     </div>
                   </div>
-                  
                   <div className="p-4">
                     <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
                       {product.name}
@@ -242,7 +233,6 @@ export default function ProductsPage() {
                     <p className="text-sm text-gray-500 mb-4 line-clamp-2">
                       {product.description}
                     </p>
-                    
                     <div className="flex items-center justify-between mb-4">
                       <span className="text-2xl font-bold text-green-600">
                         ${product.price.toFixed(2)}
@@ -251,7 +241,6 @@ export default function ProductsPage() {
                         Carbon: {product.carbonScore}
                       </div>
                     </div>
-                    
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleAddToCart(product._id)}
@@ -260,7 +249,6 @@ export default function ProductsPage() {
                       >
                         {product.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
                       </button>
-                      
                       <Link
                         href={`/products/${product._id}`}
                         className="bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 transition-colors"
@@ -272,8 +260,6 @@ export default function ProductsPage() {
                 </div>
               ))}
             </div>
-
-            {/* Pagination */}
             {pagination.pages > 1 && (
               <div className="flex justify-center mt-8">
                 <div className="flex gap-2">
@@ -284,7 +270,6 @@ export default function ProductsPage() {
                   >
                     Previous
                   </button>
-                  
                   {Array.from({ length: pagination.pages }, (_, i) => i + 1).map(page => (
                     <button
                       key={page}
@@ -298,7 +283,6 @@ export default function ProductsPage() {
                       {page}
                     </button>
                   ))}
-                  
                   <button
                     onClick={() => handlePageChange(pagination.page + 1)}
                     disabled={pagination.page === pagination.pages}

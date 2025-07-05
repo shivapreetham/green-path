@@ -2,10 +2,10 @@ import mongoose from 'mongoose';
 
 const MONGODB_URI = "mongodb+srv://2005shadowme:S5quug2t2WfmiabD@shatterbox.qksgz.mongodb.net/green-path"
 
+console.log('MONGODB_URI', MONGODB_URI)
 if (!MONGODB_URI) {
   throw new Error('Please define the MONGODB_URI environment variable');
 }
-
 let cached = global.mongoose;
 
 if (!cached) {

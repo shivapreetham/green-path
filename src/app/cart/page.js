@@ -4,11 +4,14 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import useCartStore from '@/store/cartStore';
+import { useRouter } from 'next/navigation';
+
 
 export default function CartPage() {
   const { cart, removeFromCart, updateQuantity, isLoading } = useCartStore();
   const [recommendations, setRecommendations] = useState([]);
   const [showRecommendations, setShowRecommendations] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     if (cart?.items?.length > 0) {
@@ -170,7 +173,7 @@ export default function CartPage() {
                   <span className="text-green-600">${cart.totalAmount.toFixed(2)}</span>
                 </div>
               </div>
-              <button className="w-full bg-green-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-green-700 transition-colors mt-6">
+              <button onClick={() => router.push('/checkout')} className="w-full bg-green-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-green-700 transition-colors mt-6">
                 Proceed to Checkout
               </button>
             </div>

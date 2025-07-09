@@ -14,6 +14,7 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [quantity, setQuantity] = useState(1);
+  const [carbonKg, setCarbonKg] = useState(null);
 
   const { 
     addToCart, 
@@ -40,9 +41,11 @@ export default function ProductDetailPage() {
     try {
       const response = await fetch(`/api/products/${params.id}`);
       const data = await response.json();
+      console.log("data",data);
       if (response.ok) {
         setProduct(data.product);
         setRecommendations(data.recommendations || []);
+        fetchFootprint({ product: data.product });
       } else {
         setError(data.error || 'Product not found');
       }
@@ -54,6 +57,90 @@ export default function ProductDetailPage() {
     }
   };
 
+  const fetchFootprint = async ({ product }) => {
+    console.log("product at cooler",product);
+    
+      setLoading(true);
+      setError(null);
+
+      const getEnhancedProductDescription = (product) => {
+        if (!product) return '';
+
+        const {
+          name,
+          description,
+          category,
+          brand,
+          tags = [],
+          specifications = {}
+        } = product;
+
+        // Convert specifications to string
+        const specEntries = Object.entries(specifications)
+          .map(([key, value]) => `${capitalize(key)}: ${value}`)
+          .join(', ');
+
+        const tagsString = tags.length ? `Tags: ${tags.join(', ')}.` : '';
+
+        const ans= [
+          `${name}.`,                                      // Product title
+          `${description || ''}`,                          // Base description
+          `Category: ${category || 'General'}.`,           // Product category
+          `Brand: ${brand || 'Unbranded'}.`,               // Brand info
+          specEntries ? `Specifications: ${specEntries}.` : '', // Specs
+          tagsString                                        // Tags if available
+        ]
+          .filter(Boolean)
+          .join(' ');
+          console.log("ans",ans);
+          
+          return ans
+      };
+
+      const capitalize = (str) =>
+        str.charAt(0).toUpperCase() + str.slice(1).replace(/_/g, ' ');
+
+
+      try {
+        const response = await fetch('https://api.cooler.dev/v2/footprint/products', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cooler-Api-Key': process.env.NEXT_PUBLIC_COOLER_API_KEY
+          },
+          body: JSON.stringify({
+            items: [
+              {
+                productName: product.name,
+                productDescription: getEnhancedProductDescription(product) || '',
+                productPrice: product.price,
+                postalCode: '560001',
+                newProduct: true,
+                externalId: product._id
+              }
+            ]
+          })
+        });
+
+        const data = await response.json();
+        console.log("footprint data",data);
+        
+        if (response.ok && data?.items?.length > 0) {
+          const co2e = data.items[0].footprint.carbonFootprint;
+          setCarbonKg(co2e);
+        } else {
+          throw new Error(data.message || 'Invalid API response');
+        }
+      } catch (err) {
+        console.error('Cooler API error:', err);
+        setError('Failed to fetch carbon footprint');
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+
+
   const handleAddToCart = async () => {
     try {
       clearError();
@@ -64,15 +151,17 @@ export default function ProductDetailPage() {
     }
   };
 
-  const getCarbonScoreColor = (score) => {
-    if (score <= 30) return 'text-green-600 bg-green-100';
-    if (score <= 60) return 'text-yellow-600 bg-yellow-100';
-    return 'text-red-600 bg-red-100';
+  // Color utility based on CO₂ footprint in kg
+  const getCarbonScoreColor = (kg) => {
+    if (kg <= 1.5) return 'text-green-600 bg-green-100';       // Very low emissions
+    if (kg <= 5.0) return 'text-yellow-600 bg-yellow-100';     // Medium emissions
+    return 'text-red-600 bg-red-100';                          // High emissions
   };
 
-  const getCarbonScoreLabel = (score) => {
-    if (score <= 30) return 'Eco-Friendly';
-    if (score <= 60) return 'Moderate Impact';
+  // Label utility based on CO₂ footprint in kg
+  const getCarbonScoreLabel = (kg) => {
+    if (kg <= 1.5) return 'Eco-Friendly';
+    if (kg <= 5.0) return 'Moderate Impact';
     return 'High Impact';
   };
 
@@ -151,7 +240,7 @@ export default function ProductDetailPage() {
                   ${product?.price?.toFixed(2)}
                 </span>
                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${getCarbonScoreColor(product?.carbonScore)}`}>
-                  {getCarbonScoreLabel(product?.carbonScore)} ({product?.carbonScore}/100)
+                  {getCarbonScoreLabel(product?.carbonScore)}{` (${carbonKg} kg CO2)`}
                 </span>
               </div>
             </div>

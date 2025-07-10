@@ -49,6 +49,9 @@ function Header() {
             <Link href="/add-product" className="text-gray-600 hover:text-green-600 transition-colors">
               Add Product
             </Link>
+            <Link href="/orders" className="text-gray-600 hover:text-green-600 transition-colors">
+              Orders
+            </Link>
           </nav>
 
           <div className="flex items-center space-x-4">

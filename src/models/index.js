@@ -1,7 +1,45 @@
-// models/index.js
 import mongoose from 'mongoose';
 
-// Product Schema
+// Warehouse Schema
+const warehouseSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  location: {
+    address: String,
+    lat: Number,
+    lng: Number
+  }
+}, {
+  timestamps: true
+});
+
+// Inventory Schema
+const inventorySchema = new mongoose.Schema({
+  productId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Product',
+    required: true
+  },
+  warehouseId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Warehouse',
+    required: true
+  },
+  stock: {
+    type: Number,
+    required: true,
+    min: 0,
+    default: 0
+  }
+}, {
+  timestamps: true
+});
+inventorySchema.index({ productId: 1, warehouseId: 1 }, { unique: true });
+
+// Product Schema (updated)
 const productSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -30,13 +68,7 @@ const productSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  stock: {
-    type: Number,
-    required: true,
-    min: 0,
-    default: 0
-  },
-  carbonScore: {
+  carbonFootprint: {
     type: Number,
     required: true,
     min: 0,
@@ -60,9 +92,9 @@ const productSchema = new mongoose.Schema({
 });
 
 // Add indexes for better query performance
-productSchema.index({ category: 1, carbonScore: 1 });
+productSchema.index({ category: 1, carbonFootprint: 1 });
 productSchema.index({ name: 'text', description: 'text', tags: 'text' });
-productSchema.index({ carbonScore: 1 });
+productSchema.index({ carbonFootprint: 1 });
 
 // Cart Schema
 const cartSchema = new mongoose.Schema({
@@ -115,7 +147,7 @@ cartSchema.methods.calculateTotals = function() {
   return this;
 };
 
-// Recommendation Schema - for ML/algorithm-based recommendations
+// Recommendation Schema
 const recommendationSchema = new mongoose.Schema({
   sourceProductId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -155,7 +187,7 @@ const recommendationSchema = new mongoose.Schema({
 recommendationSchema.index({ sourceProductId: 1, carbonSavings: -1 });
 recommendationSchema.index({ recommendedProductId: 1 });
 
-// Product Analytics Schema - for tracking views, swaps, etc.
+// Product Analytics Schema
 const productAnalyticsSchema = new mongoose.Schema({
   productId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -165,7 +197,7 @@ const productAnalyticsSchema = new mongoose.Schema({
   views: {
     type: Number,
     default: 0
-  },
+ },
   cartAdds: {
     type: Number,
     default: 0
@@ -192,8 +224,7 @@ const productAnalyticsSchema = new mongoose.Schema({
   timestamps: true
 });
 
-
-//order Schema - for managing orders
+// Order Schema
 const orderSchema = new mongoose.Schema({
   customerName: {
     type: String,
@@ -220,13 +251,12 @@ const orderSchema = new mongoose.Schema({
   timestamps: true
 });
 
-
-
-// Create models
 const Order = mongoose.models.Order || mongoose.model('Order', orderSchema);
 const Product = mongoose.models.Product || mongoose.model('Product', productSchema);
 const Cart = mongoose.models.Cart || mongoose.model('Cart', cartSchema);
 const Recommendation = mongoose.models.Recommendation || mongoose.model('Recommendation', recommendationSchema);
 const ProductAnalytics = mongoose.models.ProductAnalytics || mongoose.model('ProductAnalytics', productAnalyticsSchema);
+const Warehouse = mongoose.models.Warehouse || mongoose.model('Warehouse', warehouseSchema);
+const Inventory = mongoose.models.Inventory || mongoose.model('Inventory', inventorySchema);
 
-export { Product, Cart, Recommendation, ProductAnalytics, Order };
+export { Product, Cart, Recommendation, ProductAnalytics, Order, Warehouse, Inventory };

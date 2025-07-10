@@ -192,10 +192,41 @@ const productAnalyticsSchema = new mongoose.Schema({
   timestamps: true
 });
 
+
+//order Schema - for managing orders
+const orderSchema = new mongoose.Schema({
+  customerName: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  address: {
+    fullAddress: String,
+    lat: Number,
+    lng: Number
+  },
+  items: [
+    {
+      productId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Product'
+      },
+      quantity: Number,
+      priceAtTime: Number
+    }
+  ],
+  totalAmount: Number,
+}, {
+  timestamps: true
+});
+
+
+
 // Create models
+const Order = mongoose.models.Order || mongoose.model('Order', orderSchema);
 const Product = mongoose.models.Product || mongoose.model('Product', productSchema);
 const Cart = mongoose.models.Cart || mongoose.model('Cart', cartSchema);
 const Recommendation = mongoose.models.Recommendation || mongoose.model('Recommendation', recommendationSchema);
 const ProductAnalytics = mongoose.models.ProductAnalytics || mongoose.model('ProductAnalytics', productAnalyticsSchema);
 
-export { Product, Cart, Recommendation, ProductAnalytics };
+export { Product, Cart, Recommendation, ProductAnalytics, Order };

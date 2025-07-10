@@ -13,6 +13,13 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
+      <head>
+        <script
+          src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_API_KEY}&libraries=places`}
+          async
+          defer
+        ></script>
+      </head>
       <body className={inter.className}>
         <Header />
         <main>{children}</main>
@@ -41,6 +48,9 @@ function Header() {
             </Link>
             <Link href="/add-product" className="text-gray-600 hover:text-green-600 transition-colors">
               Add Product
+            </Link>
+            <Link href="/orders" className="text-gray-600 hover:text-green-600 transition-colors">
+              Orders
             </Link>
           </nav>
 

@@ -90,18 +90,19 @@ export async function POST(request) {
       cart.items[idx].quantity += quantity
     } else {
       cart.items.push({
-        productId:        new mongoose.Types.ObjectId(productId),
-        quantity,
-        priceAtTime:      product.price,
+        productId: productId,
+        quantity: quantity,
+        priceAtTime: product.price,
         carbonScoreAtTime: product.carbonFootprint
-      })
+      });
     }
 
-    // 5) recalc & save
-    cart.calculateTotals()
-    await cart.save()
+    // Calculate totals
+    cart.calculateTotals();
+    
+    await cart.save();
 
-    // 6) analytics
+    // Update analytics
     await ProductAnalytics.findOneAndUpdate(
       { productId: new mongoose.Types.ObjectId(productId) },
       { $inc: { cartAdds: 1 } },

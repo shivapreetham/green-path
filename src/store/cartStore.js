@@ -6,7 +6,7 @@ const useCartStore = create(
   persist(
     (set, get) => ({
       sessionId: null,
-      cart: { items: [], totalAmount: 0, totalCarbonFootprint: 0, estimatedCarbonSavings: 0 },
+      cart: { items: [], totalAmount: 0, totalCarbonScore: 0, estimatedCarbonSavings: 0 },
       isLoading: false,
       error: null,
       recommendations: [],
@@ -27,7 +27,6 @@ const useCartStore = create(
         if (!sessionId) {
           sessionId = get().initializeSession();
         }
-
         set({ isLoading: true, error: null });
         try {
           const response = await fetch(`/api/cart?sessionId=${sessionId}`);
@@ -37,9 +36,10 @@ const useCartStore = create(
               cart: {
                 items: data.items || [],
                 totalAmount: data.totalAmount || 0,
-                totalCarbonFootprint: data.totalCarbonFootprint || 0,
+                totalCarbonScore: data.totalCarbonScore || 0,
                 estimatedCarbonSavings: data.estimatedCarbonSavings || 0,
               },
+              recommendations: data.recommendations || [],
               isLoading: false,
             });
           } else {
@@ -47,6 +47,7 @@ const useCartStore = create(
           }
         } catch (error) {
           set({ error: 'Failed to fetch cart', isLoading: false });
+          console.error('Fetch cart error:', error);
         }
       },
 
@@ -72,16 +73,13 @@ const useCartStore = create(
         if (!sessionId) {
           sessionId = get().initializeSession();
         }
-
         set({ isLoading: true, error: null });
         try {
-          // Check stock before adding
           const hasStock = await get().checkStock(productId, quantity);
           if (!hasStock) {
             set({ error: 'Insufficient stock available', isLoading: false });
             throw new Error('Insufficient stock');
           }
-
           const response = await fetch('/api/cart', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -93,18 +91,19 @@ const useCartStore = create(
               cart: {
                 items: data.items || [],
                 totalAmount: data.totalAmount || 0,
-                totalCarbonFootprint: data.totalCarbonFootprint || 0,
+                totalCarbonScore: data.totalCarbonScore || 0,
                 estimatedCarbonSavings: data.estimatedCarbonSavings || 0,
               },
+              recommendations: data.recommendations || [],
               isLoading: false,
             });
-            get().fetchCartRecommendations();
           } else {
             set({ error: data.error || 'Failed to add to cart', isLoading: false });
             throw new Error(data.error);
           }
         } catch (error) {
           set({ error: error.message || 'Failed to add to cart', isLoading: false });
+          console.error('Add to cart error:', error);
           throw error;
         }
       },
@@ -115,16 +114,13 @@ const useCartStore = create(
         if (!sessionId) {
           sessionId = get().initializeSession();
         }
-
         set({ isLoading: true, error: null });
         try {
-          // Check stock before updating
           const hasStock = await get().checkStock(productId, quantity);
           if (!hasStock) {
             set({ error: 'Insufficient stock available', isLoading: false });
             throw new Error('Insufficient stock');
           }
-
           const response = await fetch('/api/cart', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -136,17 +132,19 @@ const useCartStore = create(
               cart: {
                 items: data.items || [],
                 totalAmount: data.totalAmount || 0,
-                totalCarbonFootprint: data.totalCarbonFootprint || 0,
+                totalCarbonScore: data.totalCarbonScore || 0,
                 estimatedCarbonSavings: data.estimatedCarbonSavings || 0,
               },
+              recommendations: data.recommendations || [],
               isLoading: false,
             });
-            get().fetchCartRecommendations();
           } else {
             set({ error: data.error || 'Failed to update cart', isLoading: false });
+            throw new Error(data.error);
           }
         } catch (error) {
           set({ error: error.message || 'Failed to update cart', isLoading: false });
+          console.error('Update quantity error:', error);
         }
       },
 
@@ -156,7 +154,6 @@ const useCartStore = create(
         if (!sessionId) {
           sessionId = get().initializeSession();
         }
-
         set({ isLoading: true, error: null });
         try {
           const response = await fetch(`/api/cart?sessionId=${sessionId}&productId=${productId}`, {
@@ -168,17 +165,19 @@ const useCartStore = create(
               cart: {
                 items: data.items || [],
                 totalAmount: data.totalAmount || 0,
-                totalCarbonFootprint: data.totalCarbonFootprint || 0,
+                totalCarbonScore: data.totalCarbonScore || 0,
                 estimatedCarbonSavings: data.estimatedCarbonSavings || 0,
               },
+              recommendations: data.recommendations || [],
               isLoading: false,
             });
-            get().fetchCartRecommendations();
           } else {
             set({ error: data.error || 'Failed to remove from cart', isLoading: false });
+            throw new Error(data.error);
           }
         } catch (error) {
           set({ error: 'Failed to remove from cart', isLoading: false });
+          console.error('Remove from cart error:', error);
         }
       },
 
@@ -188,7 +187,6 @@ const useCartStore = create(
         if (!sessionId) {
           sessionId = get().initializeSession();
         }
-
         set({ isLoading: true, error: null });
         try {
           const response = await fetch(`/api/cart?sessionId=${sessionId}`, {
@@ -197,33 +195,17 @@ const useCartStore = create(
           const data = await response.json();
           if (response.ok) {
             set({
-              cart: { items: [], totalAmount: 0, totalCarbonFootprint: 0, estimatedCarbonSavings: 0 },
+              cart: { items: [], totalAmount: 0, totalCarbonScore: 0, estimatedCarbonSavings: 0 },
               recommendations: [],
               isLoading: false,
             });
           } else {
             set({ error: data.error || 'Failed to clear cart', isLoading: false });
+            throw new Error(data.error);
           }
         } catch (error) {
           set({ error: 'Failed to clear cart', isLoading: false });
-        }
-      },
-
-      // Fetch cart recommendations
-      fetchCartRecommendations: async () => {
-        let { sessionId } = get();
-        if (!sessionId) {
-          sessionId = get().initializeSession();
-        }
-
-        try {
-          const response = await fetch(`/api/recommendations?sessionId=${sessionId}`);
-          const data = await response.json();
-          if (response.ok) {
-            set({ recommendations: data.recommendations || [] });
-          }
-        } catch (error) {
-          console.error('Failed to fetch cart recommendations:', error);
+          console.error('Clear cart error:', error);
         }
       },
 

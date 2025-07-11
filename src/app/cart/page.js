@@ -1,4 +1,3 @@
-// app/cart/page.js
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -6,11 +5,11 @@ import Link from 'next/link';
 import useCartStore from '@/store/cartStore';
 import { useRouter } from 'next/navigation';
 
-
 export default function CartPage() {
   const { cart, removeFromCart, updateQuantity, isLoading } = useCartStore();
   const [recommendations, setRecommendations] = useState([]);
   const [showRecommendations, setShowRecommendations] = useState(true);
+  const [consumerLocation, setConsumerLocation] = useState({ lat: 36.1699, lng: -115.1398 }); // Default: Las Vegas
   const router = useRouter();
 
   useEffect(() => {
@@ -22,12 +21,12 @@ export default function CartPage() {
   const fetchRecommendations = async () => {
     try {
       const productIds = cart.items.map(item => item.productId._id);
-      const response = await fetch('/api/recommendations', {
+      const response = await fetch('/api/cart/recommendations', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ productIds }),
+        body: JSON.stringify({ productIds, consumerLocation }),
       });
       
       if (response.ok) {
@@ -55,7 +54,7 @@ export default function CartPage() {
     if (!recommendations.length) return 0;
     const cartCarbonScore = cart?.totalCarbonScore || 0;
     const bestAlternativeScore = recommendations.reduce(
-      (min, rec) => Math.min(min, rec.carbonScore),
+      (min, rec) => Math.min(min, rec.totalCarbonFootprint),
       cartCarbonScore
     );
     return Math.max(0, cartCarbonScore - bestAlternativeScore);
@@ -99,7 +98,7 @@ export default function CartPage() {
           <h1 className="text-3xl font-bold text-gray-800">Shopping Cart</h1>
           <Link
             href="/products"
-            className="text-green-600 hover:text-green-700 font-medium"
+            className="text-green-600 hover:text-green-700 ff-font-medium"
           >
             Continue Shopping
           </Link>
@@ -221,19 +220,19 @@ export default function CartPage() {
                           </div>
                           <div className="flex-1">
                             <h4 className="font-medium text-gray-800 text-sm">{rec.name}</h4>
-                            <p className="text-gray-600 text-xs">{rec.brand}</p>
+                            <p className="text-gray-600 to-text-xs">{rec.brand}</p>
                           </div>
                         </div>
                         <div className="flex justify-between items-center mb-3">
                           <span className="text-sm font-bold text-green-600">${rec.price?.toFixed(2)}</span>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getCarbonScoreColor(rec.carbonScore)}`}>
-                            {rec.cancelCarbonScore}/100
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getCarbonScoreColor(rec.totalCarbonFootprint)}`}>
+                            {rec.totalCarbonFootprint.toFixed(1)}
                           </span>
                         </div>
-                        {rec.carbonScore < cart.totalCarbonScore && (
+                        {rec.totalCarbonFootprint < cart.totalCarbonScore && (
                           <div className="bg-green-50 border border-green-200 rounded p-2 mb-3">
                             <p className="text-xs text-green-800">
-                              🌱 {cart.totalCarbonScore - rec.carbonScore} carbon points better
+                              🌱 {(cart.totalCarbonScore - rec.totalCarbonFootprint).toFixed(1)} carbon points better
                             </p>
                           </div>
                         )}

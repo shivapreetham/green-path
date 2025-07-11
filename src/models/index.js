@@ -82,6 +82,7 @@ cartSchema.methods.calculateTotals = function () {
 };
 
 // Recommendation Schema
+// Recommendation Schema
 const recommendationSchema = new mongoose.Schema({
   sourceProductId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
   recommendedProductId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
@@ -98,6 +99,7 @@ const recommendationSchema = new mongoose.Schema({
 recommendationSchema.index({ sourceProductId: 1, carbonSavings: -1 });
 recommendationSchema.index({ recommendedProductId: 1 });
 
+// Product Analytics Schema
 // Product Analytics Schema
 const productAnalyticsSchema = new mongoose.Schema({
   productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },

@@ -11,7 +11,7 @@ export default function AddressPicker({ onSelect }) {
     if (!window.google || !window.google.maps) return;
 
     const map = new window.google.maps.Map(mapRef.current, {
-      center: { lat: 28.6139, lng: 77.2090 }, // Default: Delhi
+      center: { lat: 28.6139, lng: 77.2090 },
       zoom: 12,
     });
 

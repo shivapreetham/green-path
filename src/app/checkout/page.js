@@ -27,7 +27,7 @@ export default function CheckoutPage() {
 
     try {
       const orderData = {
-        customerName: 'Abhinav Dev', // TODO: Replace with authenticated user data
+        customerName: 'sexy boi', // TODO: Replace with authenticated user data
         address: {
           fullAddress: address.address,
           lat: address.lat,

@@ -24,14 +24,16 @@ export default function OrdersPage() {
           {orders.map((order, i) => (
             <div key={i} className="border p-4 rounded shadow">
               <p><strong>Date:</strong> {new Date(order.createdAt).toLocaleString()}</p>
-              <p><strong>Address:</strong> {order.address.fullAddress}</p>
-              <p><strong>Total:</strong> ₹{order.totalAmount}</p>
+              <p><strong>Address:</strong> {order.address?.fullAddress || 'N/A'}</p>
+              <p><strong>Total:</strong> ₹{order.totalAmount?.toFixed(2) || '0.00'}</p>
               <div className="mt-2">
                 <p className="font-semibold">Items:</p>
                 <ul className="list-disc ml-6">
                   {order.items.map((item, idx) => (
                     <li key={idx}>
-                      {(item.productId.name || item.productId)} × {item.quantity} = ₹{item.priceAtTime * item.quantity}
+                      {item.productId && item.productId.name
+                        ? `${item.productId.name} × ${item.quantity} = ₹${(item.priceAtTime * item.quantity).toFixed(2)}`
+                        : 'Unknown product'}
                     </li>
                   ))}
                 </ul>
@@ -40,6 +42,7 @@ export default function OrdersPage() {
           ))}
         </div>
       )}
+      {/* TODO: Implement pagination for better performance with large number of orders */}
     </div>
   );
 }

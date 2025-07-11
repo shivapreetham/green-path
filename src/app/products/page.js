@@ -1,4 +1,3 @@
-// app/products/page.js
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -96,15 +95,15 @@ export default function ProductsPage() {
     }
   };
 
-  const getCarbonScoreColor = (score) => {
-    if (score <= 30) return 'text-green-600 bg-green-100';
-    if (score <= 60) return 'text-yellow-600 bg-yellow-100';
+  const getCarbonFootprintColor = (footprint) => {
+    if (footprint <= 30) return 'text-green-600 bg-green-100';
+    if (footprint <= 60) return 'text-yellow-600 bg-yellow-100';
     return 'text-red-600 bg-red-100';
   };
 
-  const getCarbonScoreLabel = (score) => {
-    if (score <= 30) return 'Eco-Friendly';
-    if (score <= 60) return 'Moderate';
+  const getCarbonFootprintLabel = (footprint) => {
+    if (footprint <= 30) return 'Eco-Friendly';
+    if (footprint <= 60) return 'Moderate';
     return 'High Impact';
   };
 
@@ -173,7 +172,7 @@ export default function ProductsPage() {
               >
                 <option value="name">Name</option>
                 <option value="price">Price</option>
-                <option value="carbonScore">Carbon Score</option>
+                <option value="carbonFootprint">Carbon Footprint</option>
                 <option value="createdAt">Date Added</option>
               </select>
             </div>
@@ -220,8 +219,8 @@ export default function ProductsPage() {
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute top-2 right-2">
-                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getCarbonScoreColor(product.carbonScore)}`}>
-                        {getCarbonScoreLabel(product.carbonScore)}
+                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getCarbonFootprintColor(product.carbonFootprint)}`}>
+                        {getCarbonFootprintLabel(product.carbonFootprint)}
                       </span>
                     </div>
                   </div>
@@ -238,16 +237,21 @@ export default function ProductsPage() {
                         ${product.price.toFixed(2)}
                       </span>
                       <div className="text-sm text-gray-500">
-                        Carbon: {product.carbonScore}
+                        Carbon: {product.carbonFootprint}
                       </div>
+                    </div>
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-sm text-gray-500">
+                        Stock: {product.totalStock || 0}
+                      </span>
                     </div>
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleAddToCart(product._id)}
-                        disabled={cartLoading || product.stock === 0}
+                        disabled={cartLoading || (product.totalStock || 0) === 0}
                         className="flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
-                        {product.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
+                        {(product.totalStock || 0) === 0 ? 'Out of Stock' : 'Add to Cart'}
                       </button>
                       <Link
                         href={`/products/${product._id}`}

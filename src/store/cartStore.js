@@ -1,4 +1,3 @@
-// store/cartStore.js
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
@@ -7,7 +6,7 @@ const useCartStore = create(
   persist(
     (set, get) => ({
       sessionId: null,
-      cart: { items: [], totalAmount: 0, totalCarbonScore: 0, estimatedCarbonSavings: 0 },
+      cart: { items: [], totalAmount: 0, totalCarbonFootprint: 0, estimatedCarbonSavings: 0 },
       isLoading: false,
       error: null,
       recommendations: [],
@@ -38,7 +37,7 @@ const useCartStore = create(
               cart: {
                 items: data.items || [],
                 totalAmount: data.totalAmount || 0,
-                totalCarbonScore: data.totalCarbonScore || 0,
+                totalCarbonFootprint: data.totalCarbonFootprint || 0,
                 estimatedCarbonSavings: data.estimatedCarbonSavings || 0,
               },
               isLoading: false,
@@ -51,6 +50,22 @@ const useCartStore = create(
         }
       },
 
+      // Check stock availability
+      checkStock: async (productId, quantity) => {
+        try {
+          const response = await fetch(`/api/products/${productId}`);
+          const data = await response.json();
+          if (response.ok && data.product) {
+            const availableStock = data.product.totalStock || 0;
+            return availableStock >= quantity;
+          }
+          return false;
+        } catch (error) {
+          console.error('Stock check error:', error);
+          return false;
+        }
+      },
+
       // Add item to cart
       addToCart: async (productId, quantity = 1) => {
         let { sessionId } = get();
@@ -60,6 +75,13 @@ const useCartStore = create(
 
         set({ isLoading: true, error: null });
         try {
+          // Check stock before adding
+          const hasStock = await get().checkStock(productId, quantity);
+          if (!hasStock) {
+            set({ error: 'Insufficient stock available', isLoading: false });
+            throw new Error('Insufficient stock');
+          }
+
           const response = await fetch('/api/cart', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -71,7 +93,7 @@ const useCartStore = create(
               cart: {
                 items: data.items || [],
                 totalAmount: data.totalAmount || 0,
-                totalCarbonScore: data.totalCarbonScore || 0,
+                totalCarbonFootprint: data.totalCarbonFootprint || 0,
                 estimatedCarbonSavings: data.estimatedCarbonSavings || 0,
               },
               isLoading: false,
@@ -96,6 +118,13 @@ const useCartStore = create(
 
         set({ isLoading: true, error: null });
         try {
+          // Check stock before updating
+          const hasStock = await get().checkStock(productId, quantity);
+          if (!hasStock) {
+            set({ error: 'Insufficient stock available', isLoading: false });
+            throw new Error('Insufficient stock');
+          }
+
           const response = await fetch('/api/cart', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -107,7 +136,7 @@ const useCartStore = create(
               cart: {
                 items: data.items || [],
                 totalAmount: data.totalAmount || 0,
-                totalCarbonScore: data.totalCarbonScore || 0,
+                totalCarbonFootprint: data.totalCarbonFootprint || 0,
                 estimatedCarbonSavings: data.estimatedCarbonSavings || 0,
               },
               isLoading: false,
@@ -117,7 +146,7 @@ const useCartStore = create(
             set({ error: data.error || 'Failed to update cart', isLoading: false });
           }
         } catch (error) {
-          set({ error: 'Failed to update cart', isLoading: false });
+          set({ error: error.message || 'Failed to update cart', isLoading: false });
         }
       },
 
@@ -139,7 +168,7 @@ const useCartStore = create(
               cart: {
                 items: data.items || [],
                 totalAmount: data.totalAmount || 0,
-                totalCarbonScore: data.totalCarbonScore || 0,
+                totalCarbonFootprint: data.totalCarbonFootprint || 0,
                 estimatedCarbonSavings: data.estimatedCarbonSavings || 0,
               },
               isLoading: false,
@@ -168,7 +197,7 @@ const useCartStore = create(
           const data = await response.json();
           if (response.ok) {
             set({
-              cart: { items: [], totalAmount: 0, totalCarbonScore: 0, estimatedCarbonSavings: 0 },
+              cart: { items: [], totalAmount: 0, totalCarbonFootprint: 0, estimatedCarbonSavings: 0 },
               recommendations: [],
               isLoading: false,
             });

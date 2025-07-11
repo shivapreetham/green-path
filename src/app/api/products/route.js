@@ -1,7 +1,8 @@
-// app/api/products/route.js
 import { NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 import connectDB from '@/lib/db';
-import { Product, ProductAnalytics } from '@/models';
+import { Product, Inventory, ProductAnalytics } from '@/models';
+import { calculateCarbonFootprint } from '@/lib/coolerApi';
 
 export async function GET(request) {
   try {
@@ -15,7 +16,6 @@ export async function GET(request) {
     const limit = parseInt(searchParams.get('limit')) || 12;
     const skip = (page - 1) * limit;
 
-    // Build query
     let query = { isActive: true };
     
     if (category && category !== 'all') {
@@ -26,18 +26,35 @@ export async function GET(request) {
       query.$text = { $search: search };
     }
 
-    // Build sort object
     const sortObj = {};
     sortObj[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
-    const products = await Product.find(query)
-      .sort(sortObj)
-      .skip(skip)
-      .limit(limit)
-      .lean();
+    const products = await Product.aggregate([
+      { $match: query },
+      {
+        $lookup: {
+          from: 'inventories',
+          localField: '_id',
+          foreignField: 'productId',
+          as: 'inventory'
+        }
+      },
+      {
+        $addFields: {
+          totalStock: { $sum: '$inventory.stock' }
+        }
+      },
+      { $sort: sortObj },
+      { $skip: skip },
+      { $limit: limit },
+      {
+        $project: {
+          inventory: 0 // Exclude inventory array from response
+        }
+      }
+    ]);
 
     const total = await Product.countDocuments(query);
-    // console.log('Products API Response:', products);
     return NextResponse.json({
       products,
       pagination: {
@@ -59,27 +76,21 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     await connectDB();
-    
     const body = await request.json();
     const {
-      name,
-      description,
-      price,
-      category,
-      brand,
-      image,
-      stock,
-      carbonScore,
-      tags,
-      specifications
+      name, description, price, category, brand, image, tags, warehouseId, initialStock
     } = body;
 
-    // Validate required fields
-    if (!name || !description || !price || !category || !brand || !image) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+    if (!name || !description || !price || !category || !brand || !image || !warehouseId || initialStock === undefined) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    let carbonFootprint;
+    try {
+      carbonFootprint = await calculateCarbonFootprint(body);
+    } catch (error) {
+      console.error('Carbon footprint calculation failed:', error);
+      return NextResponse.json({ error: 'Failed to calculate carbon footprint' }, { status: 500 });
     }
 
     const product = new Product({
@@ -89,26 +100,24 @@ export async function POST(request) {
       category,
       brand,
       image,
-      stock: stock || 0,
-      carbonScore: carbonScore || 50,
+      carbonFootprint,
       tags: tags || [],
-      specifications: specifications || {}
     });
-
     await product.save();
 
-    // Create analytics entry
-    const analytics = new ProductAnalytics({
-      productId: product._id
+    const inventory = new Inventory({
+      productId: product._id,
+      warehouseId,
+      stock: parseInt(initialStock, 10) || 0
     });
+    await inventory.save();
+
+    const analytics = new ProductAnalytics({ productId: product._id });
     await analytics.save();
 
     return NextResponse.json(product, { status: 201 });
   } catch (error) {
     console.error('Product creation error:', error);
-    return NextResponse.json(
-      { error: 'Failed to create product' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to create product' }, { status: 500 });
   }
 }

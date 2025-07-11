@@ -34,8 +34,10 @@ export default function AddProductPage() {
       try {
         const response = await fetch('/api/warehouses');
         if (response.ok) {
+          
           const data = await response.json();
-          setWarehouses(data.warehouses || []);
+          // console.log(data);
+          setWarehouses(data|| []);
         } else {
           setError('Failed to fetch warehouses.');
         }
@@ -311,7 +313,7 @@ export default function AddProductPage() {
                     <option value="">Select warehouse</option>
                     {warehouses.map(warehouse => (
                       <option key={warehouse._id} value={warehouse._id}>
-                        {warehouse.name} ({warehouse.location.address})
+                        {warehouse.name}
                       </option>
                     ))}
                   </select>

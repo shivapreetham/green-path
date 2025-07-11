@@ -4,21 +4,14 @@ import connectDB from '@/lib/db';
 import { Warehouse } from '@/models';
 
 export async function GET() {
-  try {
-    await connectDB();
-    // only return name and _id (as you had before)
-    const warehouses = await Warehouse.find({})
-      .select('name _id')
-      .lean();
-    return NextResponse.json(warehouses);
-  } catch (error) {
-    console.error('Warehouses GET Error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch warehouses' },
-      { status: 500 }
-    );
-  }
+  await connectDB();
+  const warehouses = await Warehouse.find({})
+    .select('name _id location.address')
+    .lean();
+  console.log(warehouses);
+  return NextResponse.json(warehouses);
 }
+
 
 export async function POST(request) {
   try {

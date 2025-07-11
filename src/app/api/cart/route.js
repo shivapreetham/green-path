@@ -89,7 +89,7 @@ export async function POST(request) {
         productId: productId,
         quantity: quantity,
         priceAtTime: product.price,
-        carbonScoreAtTime: product.carbonScore
+        carbonScoreAtTime: product.carbonFootprint
       });
     }
 

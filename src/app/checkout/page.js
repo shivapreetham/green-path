@@ -43,8 +43,11 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (!result) return;
     const rewardCoins = result?.rewardCoins || 0;
-    const alreadyCoins = JSON.parse(localStorage.getItem('checkoutResult') || 0);
-    localStorage.setItem('checkoutResult', JSON.stringify(alreadyCoins + rewardCoins));
+    const parsed = JSON.parse(localStorage.getItem('checkoutResult'))
+    const alreadyCoins = parsed?parsed.totalCoins:0;
+    const totalCoins = alreadyCoins + rewardCoins;
+    const co2Saved = result?.co2Saved || 0;
+    localStorage.setItem('checkoutResult', JSON.stringify({ totalCoins, co2Saved }));
     confetti({
       particleCount: 120,
       spread: 90,

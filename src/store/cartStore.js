@@ -1,4 +1,3 @@
-// store/cartStore.js
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
@@ -28,7 +27,6 @@ const useCartStore = create(
         if (!sessionId) {
           sessionId = get().initializeSession();
         }
-
         set({ isLoading: true, error: null });
         try {
           const response = await fetch(`/api/cart?sessionId=${sessionId}`);
@@ -41,6 +39,7 @@ const useCartStore = create(
                 totalCarbonScore: data.totalCarbonScore || 0,
                 estimatedCarbonSavings: data.estimatedCarbonSavings || 0,
               },
+              recommendations: data.recommendations || [],
               isLoading: false,
             });
           } else {
@@ -48,6 +47,23 @@ const useCartStore = create(
           }
         } catch (error) {
           set({ error: 'Failed to fetch cart', isLoading: false });
+          console.error('Fetch cart error:', error);
+        }
+      },
+
+      // Check stock availability
+      checkStock: async (productId, quantity) => {
+        try {
+          const response = await fetch(`/api/products/${productId}`);
+          const data = await response.json();
+          if (response.ok && data.product) {
+            const availableStock = data.product.totalStock || 0;
+            return availableStock >= quantity;
+          }
+          return false;
+        } catch (error) {
+          console.error('Stock check error:', error);
+          return false;
         }
       },
 
@@ -57,9 +73,13 @@ const useCartStore = create(
         if (!sessionId) {
           sessionId = get().initializeSession();
         }
-
         set({ isLoading: true, error: null });
         try {
+          const hasStock = await get().checkStock(productId, quantity);
+          if (!hasStock) {
+            set({ error: 'Insufficient stock available', isLoading: false });
+            throw new Error('Insufficient stock');
+          }
           const response = await fetch('/api/cart', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -74,15 +94,16 @@ const useCartStore = create(
                 totalCarbonScore: data.totalCarbonScore || 0,
                 estimatedCarbonSavings: data.estimatedCarbonSavings || 0,
               },
+              recommendations: data.recommendations || [],
               isLoading: false,
             });
-            get().fetchCartRecommendations();
           } else {
             set({ error: data.error || 'Failed to add to cart', isLoading: false });
             throw new Error(data.error);
           }
         } catch (error) {
           set({ error: error.message || 'Failed to add to cart', isLoading: false });
+          console.error('Add to cart error:', error);
           throw error;
         }
       },
@@ -93,9 +114,13 @@ const useCartStore = create(
         if (!sessionId) {
           sessionId = get().initializeSession();
         }
-
         set({ isLoading: true, error: null });
         try {
+          const hasStock = await get().checkStock(productId, quantity);
+          if (!hasStock) {
+            set({ error: 'Insufficient stock available', isLoading: false });
+            throw new Error('Insufficient stock');
+          }
           const response = await fetch('/api/cart', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -110,14 +135,16 @@ const useCartStore = create(
                 totalCarbonScore: data.totalCarbonScore || 0,
                 estimatedCarbonSavings: data.estimatedCarbonSavings || 0,
               },
+              recommendations: data.recommendations || [],
               isLoading: false,
             });
-            get().fetchCartRecommendations();
           } else {
             set({ error: data.error || 'Failed to update cart', isLoading: false });
+            throw new Error(data.error);
           }
         } catch (error) {
-          set({ error: 'Failed to update cart', isLoading: false });
+          set({ error: error.message || 'Failed to update cart', isLoading: false });
+          console.error('Update quantity error:', error);
         }
       },
 
@@ -127,7 +154,6 @@ const useCartStore = create(
         if (!sessionId) {
           sessionId = get().initializeSession();
         }
-
         set({ isLoading: true, error: null });
         try {
           const response = await fetch(`/api/cart?sessionId=${sessionId}&productId=${productId}`, {
@@ -142,14 +168,16 @@ const useCartStore = create(
                 totalCarbonScore: data.totalCarbonScore || 0,
                 estimatedCarbonSavings: data.estimatedCarbonSavings || 0,
               },
+              recommendations: data.recommendations || [],
               isLoading: false,
             });
-            get().fetchCartRecommendations();
           } else {
             set({ error: data.error || 'Failed to remove from cart', isLoading: false });
+            throw new Error(data.error);
           }
         } catch (error) {
           set({ error: 'Failed to remove from cart', isLoading: false });
+          console.error('Remove from cart error:', error);
         }
       },
 
@@ -159,7 +187,6 @@ const useCartStore = create(
         if (!sessionId) {
           sessionId = get().initializeSession();
         }
-
         set({ isLoading: true, error: null });
         try {
           const response = await fetch(`/api/cart?sessionId=${sessionId}`, {
@@ -174,27 +201,11 @@ const useCartStore = create(
             });
           } else {
             set({ error: data.error || 'Failed to clear cart', isLoading: false });
+            throw new Error(data.error);
           }
         } catch (error) {
           set({ error: 'Failed to clear cart', isLoading: false });
-        }
-      },
-
-      // Fetch cart recommendations
-      fetchCartRecommendations: async () => {
-        let { sessionId } = get();
-        if (!sessionId) {
-          sessionId = get().initializeSession();
-        }
-
-        try {
-          const response = await fetch(`/api/recommendations?sessionId=${sessionId}`);
-          const data = await response.json();
-          if (response.ok) {
-            set({ recommendations: data.recommendations || [] });
-          }
-        } catch (error) {
-          console.error('Failed to fetch cart recommendations:', error);
+          console.error('Clear cart error:', error);
         }
       },
 

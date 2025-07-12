@@ -1,149 +1,164 @@
-// app/api/products/[id]/route.js
-import { NextResponse } from 'next/server';
-import connectDB from '@/lib/db';
-import { Product, Recommendation, ProductAnalytics } from '@/models';
+import { NextResponse } from 'next/server'
+import mongoose from 'mongoose'
+import connectDB from '@/lib/db'
+import { Product, Inventory } from '@/models'
 
+/**
+ * Utility: Recommend 4 random products from the same category (excluding self)
+ */
+async function getRecommendations(currentProductId, category) {
+  return await Product.aggregate([
+    {
+      $match: {
+        _id: { $ne: new mongoose.Types.ObjectId(currentProductId) },
+        category,
+        isActive: true
+      }
+    },
+    { $sample: { size: 4 } }, // random 4 recommendations
+    {
+      $lookup: {
+        from: 'inventories',
+        localField: '_id',
+        foreignField: 'productId',
+        as: 'inventoryDocs'
+      }
+    },
+    {
+      $addFields: {
+        totalStock: { $sum: '$inventoryDocs.stock' }
+      }
+    },
+    {
+      $project: {
+        inventoryDocs: 0,
+        __v: 0
+      }
+    }
+  ])
+}
+
+/**
+ * GET /api/products/[id]
+ */
 export async function GET(request, { params }) {
   try {
-    await connectDB();
-    
-    const { id } = await params;
-    
-    // Get product details
-    const product = await Product.findById(id).lean();
-    
+    await connectDB()
+    const productId = await params.id
+
+    const [product] = await Product.aggregate([
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(productId),
+          isActive: true
+        }
+      },
+      {
+        $lookup: {
+          from: 'inventories',
+          localField: '_id',
+          foreignField: 'productId',
+          as: 'inventoryDocs'
+        }
+      },
+      {
+        $addFields: {
+          totalStock: { $sum: '$inventoryDocs.stock' }
+        }
+      },
+      {
+        $project: {
+          inventoryDocs: 0,
+          __v: 0
+        }
+      }
+    ])
+
     if (!product) {
       return NextResponse.json(
-        { error: 'Product not found' },
+        { error: 'Product not found or inactive' },
         { status: 404 }
-      );
+      )
     }
 
-    // Update view count
-    await ProductAnalytics.findOneAndUpdate(
-      { productId: id },
-      { 
-        $inc: { views: 1 },
-        lastViewed: new Date()
-      },
-      { upsert: true }
-    );
+    const recommendations = await getRecommendations(productId, product.category)
 
-    // Get recommendations (better alternatives with lower carbon score)
-    const recommendations = await getRecommendations(id, product.category, product.carbonScore);
-
-    return NextResponse.json({
-      product,
-      recommendations
-    });
+    return NextResponse.json({ product, recommendations })
   } catch (error) {
-    console.error('Product detail API Error:', error);
+    console.error('Product fetch error:', error)
     return NextResponse.json(
       { error: 'Failed to fetch product' },
       { status: 500 }
-    );
+    )
   }
 }
 
-async function getRecommendations(productId, category, carbonScore) {
-  try {
-    // First, check if we have ML-based recommendations
-    const mlRecommendations = await Recommendation.find({
-      sourceProductId: productId,
-      recommendationType: 'alternative'
-    })
-    .populate('recommendedProductId')
-    .sort({ carbonSavings: -1 })
-    .limit(6)
-    .lean();
-
-    if (mlRecommendations.length > 0) {
-      return mlRecommendations.map(rec => ({
-        ...rec.recommendedProductId,
-        carbonSavings: rec.carbonSavings,
-        similarity: rec.similarity,
-        recommendationType: rec.recommendationType
-      }));
-    }
-
-    // Fallback to rule-based recommendations
-    const similarProducts = await Product.find({
-      _id: { $ne: productId },
-      category: category,
-      carbonScore: { $lt: carbonScore }, // Better carbon score
-      isActive: true
-    })
-    .sort({ carbonScore: 1 }) // Best carbon score first
-    .limit(6)
-    .lean();
-
-    return similarProducts.map(product => ({
-      ...product,
-      carbonSavings: Math.round(carbonScore - product.carbonScore),
-      similarity: 0.8, // Default similarity
-      recommendationType: 'alternative'
-    }));
-  } catch (error) {
-    console.error('Recommendations error:', error);
-    return [];
-  }
-}
-
+/**
+ * PUT /api/products/[id]
+ */
 export async function PUT(request, { params }) {
   try {
-    await connectDB();
-    
-    const { id } = params;
-    const updates = await request.json();
-    
+    await connectDB()
+    const { id } = await params
+    const updates = await request.json()
+
+    delete updates.stock // Inventory is managed separately
+
     const product = await Product.findByIdAndUpdate(
       id,
       { $set: updates },
       { new: true, runValidators: true }
-    );
+    )
 
     if (!product) {
       return NextResponse.json(
         { error: 'Product not found' },
         { status: 404 }
-      );
+      )
     }
 
-    return NextResponse.json(product);
+    return NextResponse.json(product)
   } catch (error) {
-    console.error('Product update error:', error);
+    console.error('Product update error:', error)
     return NextResponse.json(
       { error: 'Failed to update product' },
       { status: 500 }
-    );
+    )
   }
 }
 
+/**
+ * DELETE /api/products/[id]
+ */
 export async function DELETE(request, { params }) {
   try {
-    await connectDB();
-    
-    const { id } = params;
-    
+    await connectDB()
+    const { id } = await params
+
     const product = await Product.findByIdAndUpdate(
       id,
       { isActive: false },
       { new: true }
-    );
+    )
 
     if (!product) {
       return NextResponse.json(
         { error: 'Product not found' },
         { status: 404 }
-      );
+      )
     }
 
-    return NextResponse.json({ message: 'Product deleted successfully' });
+    await Inventory.updateMany(
+      { productId: id },
+      { stock: 0 }
+    )
+
+    return NextResponse.json({ message: 'Product deleted successfully' })
   } catch (error) {
-    console.error('Product deletion error:', error);
+    console.error('Product deletion error:', error)
     return NextResponse.json(
       { error: 'Failed to delete product' },
       { status: 500 }
-    );
+    )
   }
 }

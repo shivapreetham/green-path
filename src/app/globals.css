@@ -49,7 +49,7 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+  --primary: oklch(0.8 0.2 60);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
@@ -116,5 +116,25 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .btn-fancy {
+    @apply bg-primary text-primary-foreground font-semibold shadow-md transition-all duration-300
+      hover:scale-[1.02] hover:bg-primary/90 active:scale-[0.98] cursor-pointer;
+  }
+
+  .btn-secondary-fancy {
+    @apply bg-secondary text-secondary-foreground font-semibold transition-all duration-300
+      hover:scale-[1.02] hover:bg-secondary/90 active:scale-[0.98] cursor-pointer;
+  }
+
+  .card-slot-highlight {
+    @apply ring-2 ring-purple-500 ring-offset-2 shadow-md;
+  }
+
+  .card-slot-base {
+    @apply relative border rounded-xl p-5 cursor-pointer transition duration-200 bg-white;
   }
 }

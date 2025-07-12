@@ -189,6 +189,13 @@ const clusterSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+const coinsSchema = new mongoose.Schema({
+  coins: {
+    type: Number,
+    default: 0
+  }
+}, { timestamps: true });
+
 // Models
 const Product = mongoose.models.Product || mongoose.model('Product', productSchema);
 const Cart = mongoose.models.Cart || mongoose.model('Cart', cartSchema);
@@ -198,6 +205,7 @@ const Order = mongoose.models.Order || mongoose.model('Order', orderSchema);
 const Warehouse = mongoose.models.Warehouse || mongoose.model('Warehouse', warehouseSchema);
 const Inventory = mongoose.models.Inventory || mongoose.model('Inventory', inventorySchema);
 const Cluster = mongoose.models.Cluster || mongoose.model('Cluster', clusterSchema);
+const Coins = mongoose.models.Coins || mongoose.model('Coins', coinsSchema);
 
 // Export
 export {
@@ -208,5 +216,6 @@ export {
   Order,
   Warehouse,
   Inventory,
-  Cluster // New
+  Cluster,
+  Coins
 };

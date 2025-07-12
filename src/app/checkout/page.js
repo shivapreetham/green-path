@@ -62,7 +62,7 @@ export default function CheckoutPage() {
   const onSelectAddress = async (pos) => {
     setAddress(pos);
     // 1) Ask the server for best slot
-    const res = await fetch('/api/suggest-slot', {
+    const res = await fetch('/api/checkout/suggest-slot', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(pos)
@@ -103,13 +103,15 @@ export default function CheckoutPage() {
       ))}
 
       <h2>Select Delivery Location</h2>
-      <AddressPicker onSelect={setAddress}/>
-      {address && (
-        <p>
-          Selected coords: {address.lat.toFixed(5)}, {address.lng.toFixed(5)}
-        </p>
+      <AddressPicker onSelect={onSelectAddress}/>
+      {address && suggestion && (
+        <div style={{ margin: '1rem 0', padding: '0.5rem', background: '#e8f5e9' }}>
+          🚀 Best slot: <strong>{suggestion.timeSlot}</strong><br/>
+          Peers nearby: {suggestion.peers} orders<br/>
+          Expected CO₂ saved: {suggestion.savings.toFixed(2)} kg
+        </div>
       )}
-
+      
       <button
         onClick={handleCheckout}
         disabled={loading}

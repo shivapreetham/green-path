@@ -1,53 +1,38 @@
 // components/AddressPicker.jsx
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
+import { GoogleMap, Marker, useLoadScript } from '@react-google-maps/api';
+
+const containerStyle = {
+  width: '100%',
+  height: '300px'
+};
+const center = { lat: 20.5937, lng: 78.9629 };  // default India
 
 export default function AddressPicker({ onSelect }) {
-  const mapRef = useRef(null);
-  const markerRef = useRef(null);
+  const { isLoaded, loadError } = useLoadScript({
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_API_KEY
+  });
+  const [markerPos, setMarkerPos] = useState(null);
 
-  useEffect(() => {
-    // load the Google Maps script
-    if (!window.google) {
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_API_KEY}`;
-      script.async = true;
-      script.onload = initMap;
-      document.head.appendChild(script);
-    } else {
-      initMap();
-    }
-
-    function initMap() {
-      const map = new window.google.maps.Map(mapRef.current, {
-        center: { lat: 20.5937, lng: 78.9629 }, // India center
-        zoom: 5,
-      });
-
-      map.addListener('click', (e) => {
-        const pos = { lat: e.latLng.lat(), lng: e.latLng.lng() };
-        // place or move marker
-        if (markerRef.current) {
-          markerRef.current.setPosition(e.latLng);
-        } else {
-          markerRef.current = new window.google.maps.Marker({
-            position: e.latLng,
-            map,
-          });
-        }
-        onSelect(pos);
-      });
-    }
+  const handleClick = useCallback((event) => {
+    const pos = { lat: event.latLng.lat(), lng: event.latLng.lng() };
+    setMarkerPos(pos);
+    onSelect(pos);
   }, [onSelect]);
 
+  if (loadError) return <div>Error loading maps</div>;
+  if (!isLoaded) return <div>Loading map…</div>;
+
   return (
-    <div>
-      <p>Click on the map to choose your delivery location:</p>
-      <div
-        ref={mapRef}
-        style={{ width: '100%', height: '300px', border: '1px solid #ccc' }}
-      />
-    </div>
+    <GoogleMap
+      mapContainerStyle={containerStyle}
+      center={center}
+      zoom={5}
+      onClick={handleClick}
+    >
+      {markerPos && <Marker position={markerPos} />}
+    </GoogleMap>
   );
 }

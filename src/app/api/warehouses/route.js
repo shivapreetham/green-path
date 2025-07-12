@@ -6,8 +6,9 @@ import { Warehouse } from '@/models';
 export async function GET() {
   await connectDB();
   const warehouses = await Warehouse.find({})
-    .select('name _id location.address')
+    .select('name _id location.address location.lat location.lng')  // ✅ fix here
     .lean();
+
   console.log(warehouses);
   return NextResponse.json(warehouses);
 }

@@ -108,63 +108,94 @@ export default function WarehouseDetailPage() {
 
         {/* 🌍 Map & Route */}
         {!loading && orders.length > 0 && warehouse && (
-          <div className="bg-white p-6 rounded-xl shadow-md mb-10">
-            <ClusterMap
-              route={routeData?.[0]?.route || []}
-              center={{ lat: warehouse.location.lat, lng: warehouse.location.lng }}
-              orders={orders}
-              warehouse={warehouse}
-              ecoSteps={routeData?.[0]?.steps || []}
-            />
+                <div className="bg-white p-6 rounded-xl shadow-md mb-10">
+                  <ClusterMap
+                    route={routeData?.[0]?.route || []}
+                    center={{ lat: warehouse.location.lat, lng: warehouse.location.lng }}
+                    orders={orders}
+                    warehouse={warehouse}
+                    ecoSteps={routeData?.[0]?.steps || []}
+                  />
 
-            <button
-              className="mt-6 px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow hover:bg-green-700 transition"
-              onClick={handleEcoRoute}
-            >
-              <FaLeaf className="inline-block mr-2" />
-              Calculate Eco Route
-            </button>
-
-            {routeData && (
-              <div className="mt-6">
-                <EcoRouteSummary data={routeData} />
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* 📝 Orders List */}
-        {orders.length > 0 && (
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">📋 Orders:</h2>
-            <div className="grid md:grid-cols-2 gap-4">
-              {orders.map(o => (
-                <div key={o._id} className="bg-white p-4 rounded-lg shadow hover:shadow-md transition">
                   <button
-                    className="text-left w-full font-semibold text-indigo-700"
-                    onClick={() => setActiveOrderId(prev => (prev === o._id ? null : o._id))}
+                    className="mt-6 px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow hover:bg-green-700 transition"
+                    onClick={handleEcoRoute}
                   >
-                    {o.customerName} — {o.address?.fullAddress}
+                    <FaLeaf className="inline-block mr-2" />
+                    Calculate Eco Route
                   </button>
-                  {activeOrderId === o._id && (
-                    <div className="mt-3 text-gray-700 text-sm">
-                      <p className="font-medium">Items:</p>
-                      <ul className="list-disc pl-5 mt-1 space-y-1">
-                        {o.items.map((item, idx) => (
-                          <li key={idx}>
-                            {item?.productId?.name} × {item.quantity} @ ₹{item.priceAtTime}
-                          </li>
-                        ))}
-                      </ul>
-                      <p className="mt-2 font-medium">Total: ₹{o.totalAmount}</p>
-                      <p className="text-sm text-gray-600">Slot: {o.timeSlot}</p>
+
+                  {routeData && (
+                    <div className="mt-6">
+                      <EcoRouteSummary data={routeData} />
                     </div>
                   )}
                 </div>
-              ))}
-            </div>
+              )}
+
+              {/* 📝 Orders List */}
+              {orders.length > 0 && (
+        <div className="mt-10">
+          <h2 className="text-3xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+            📋 Orders Summary
+          </h2>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {orders.map(o => (
+              <div
+                key={o._id}
+                className="bg-white p-5 rounded-xl shadow-md border border-gray-100 hover:shadow-lg transition"
+              >
+                <button
+                  className="text-left w-full text-lg font-semibold text-indigo-700 hover:underline"
+                  onClick={() =>
+                    setActiveOrderId(prev => (prev === o._id ? null : o._id))
+                  }
+                >
+                  🧍 {o.customerName}
+                </button>
+
+                <p className="text-sm text-gray-600 mt-1">
+                  📍 {o.address?.fullAddress}
+                </p>
+
+                <div className="mt-2">
+                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium 
+                    ${o.timeSlot === 'morning' ? 'bg-yellow-100 text-yellow-800' : 
+                      o.timeSlot === 'afternoon' ? 'bg-blue-100 text-blue-800' : 
+                      'bg-purple-100 text-purple-800'}`}>
+                    ⏰ {o.timeSlot}
+                  </span>
+                </div>
+
+                
+                  <div className="mt-4 text-sm text-gray-700 space-y-3">
+                    <div>
+                      <p className="font-medium text-gray-800">🛒 Items:</p>
+                      <ul className="list-disc pl-6 space-y-1 mt-1">
+                        {o.items.map((item, idx) => (
+                          <li key={idx}>
+                            <span className="text-gray-800 font-medium">
+                              {item?.productId?.name}
+                            </span>{' '}
+                            × {item.quantity} &nbsp;
+                            <span className="text-gray-500 text-xs">₹{item.priceAtTime}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <p className="font-medium text-green-700">
+                      💰 Total Amount: ₹{o.totalAmount}
+                    </p>
+                  </div>
+                
+              </div>
+            ))}
           </div>
-        )}
+        </div>
+      )}
+
       </div>
     </div>
   );

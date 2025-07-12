@@ -1,136 +1,187 @@
-// app/checkout/page.jsx  (or pages/checkout.jsx)
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import AddressPicker from '@/components/PickAddress';
-import useCartStore from '@/store/cartStore';
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import AddressPicker from "@/components/PickAddress";
+import useCartStore from "@/store/cartStore";
 
 export default function CheckoutPage() {
   const [address, setAddress] = useState(null);
-  const [timeSlot, setTimeSlot] = useState('morning');
+  const [timeSlot, setTimeSlot] = useState("morning");
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [suggestion, setSuggestion] = useState(null);
-  const {sessionId, fetchCart, cart} = useCartStore();
+  const { sessionId, fetchCart, cart } = useCartStore();
 
   useEffect(() => {
-      if (!sessionId) return;           // wait until sessionId is non-null
-      setLoading(true);
-      console.log(`Fetching cart for session ID: ${sessionId}`);
+    if (!sessionId) return;
+    setLoading(true);
+    fetchCart()
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [sessionId]);
 
-      fetchCart()                        // your store’s fetchCart should set `cart`
-        .catch(console.error)
-        .finally(() => setLoading(false));
-    }, [sessionId, fetchCart]);
-
-  useEffect(()=>{
-      if(!result) return;
-      const rewardCoins = result?.rewardCoins || 0;
-      const alreadyCoins = JSON.parse(localStorage.getItem('checkoutResult') || 0);
-      localStorage.setItem('checkoutResult', JSON.stringify(alreadyCoins + rewardCoins));
-  },[result])
+  useEffect(() => {
+    if (!result) return;
+    const rewardCoins = result?.rewardCoins || 0;
+    const alreadyCoins = JSON.parse(
+      localStorage.getItem("checkoutResult") || 0
+    );
+    localStorage.setItem(
+      "checkoutResult",
+      JSON.stringify(alreadyCoins + rewardCoins)
+    );
+  }, [result]);
 
   const handleCheckout = async () => {
     if (!address) {
-      alert('Please select your delivery location on the map.');
+      alert("Please select your delivery location.");
       return;
     }
     setLoading(true);
     setResult(null);
-
     const payload = {
       sessionId,
       address: {
-        fullAddress: '', // optionally reverse-geocode
+        fullAddress: address.fullAddress, // 👈 now coming from picker
         lat: address.lat,
-        lng: address.lng
+        lng: address.lng,
       },
-      timeSlot
+      timeSlot,
     };
 
-    const res = await fetch('/api/checkout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+    const res = await fetch("/api/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
     });
     const data = await res.json();
     setResult(data);
     setLoading(false);
   };
-
-   // When user selects location:
   const onSelectAddress = async (pos) => {
     setAddress(pos);
-    // 1) Ask the server for best slot
-    const res = await fetch('/api/checkout/suggest-slot', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(pos)
+    
+    const res = await fetch("/api/checkout/suggest-slot", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(pos),
     });
     const data = await res.json();
     setSuggestion(data.best);
-    // optionally pre‑select that slot:
     setTimeSlot(data.best.timeSlot);
   };
 
-  if (!cart) return <p>Loading cart…</p>;
+  if (!cart) {
+    return (
+      <div className="max-w-xl mx-auto mt-20">
+        <Skeleton className="h-8 w-full mb-4" />
+        <Skeleton className="h-4 w-1/2 mb-2" />
+        <Skeleton className="h-4 w-2/3 mb-2" />
+        <Skeleton className="h-10 w-full" />
+      </div>
+    );
+  }
 
   return (
-    <div style={{ maxWidth: 600, margin: '2rem auto', padding: '0 1rem' }}>
-      <h1>Checkout</h1>
+    <div className="max-w-3xl mx-auto p-6 space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>🛒 Order Summary</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {cart.items.map((item) => (
+            <div key={item.productId} className="flex justify-between">
+              <span>
+                {item.name} × {item.quantity}
+              </span>
+              <span>₹{item.priceAtTime.toFixed(2)}</span>
+            </div>
+          ))}
+          <div className="flex justify-between font-semibold pt-2 border-t">
+            <span>Total</span>
+            <span>₹{cart.totalAmount.toFixed(2)}</span>
+          </div>
+        </CardContent>
+      </Card>
 
-      <h2>Order Summary</h2>
-      <ul>
-        {cart.items.map((item) => (
-          <li key={item.productId}>
-            {item.name} × {item.quantity} — ₹{item.priceAtTime.toFixed(2)}
-          </li>
-        ))}
-      </ul>
-      <p><strong>Total: ₹{cart.totalAmount.toFixed(2)}</strong></p>
+      <Card>
+        <CardHeader>
+          <CardTitle>📅 Select Delivery Time Slot</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <RadioGroup
+            value={timeSlot}
+            onValueChange={setTimeSlot}
+            className="flex gap-4"
+          >
+            {["morning", "afternoon", "evening"].map((slot) => (
+              <div key={slot} className="flex items-center space-x-2">
+                <RadioGroupItem value={slot} id={slot} />
+                <Label htmlFor={slot} className="capitalize">
+                  {slot}
+                </Label>
+              </div>
+            ))}
+          </RadioGroup>
+        </CardContent>
+      </Card>
 
-      <h2>Select Delivery Time Slot</h2>
-      {['morning','afternoon','evening'].map((slot) => (
-        <label key={slot} style={{ marginRight: '1rem' }}>
-          <input
-            type="radio"
-            name="timeslot"
-            value={slot}
-            checked={timeSlot === slot}
-            onChange={() => setTimeSlot(slot)}
-          /> {slot.charAt(0).toUpperCase()+slot.slice(1)}
-        </label>
-      ))}
+      <Card>
+        <CardHeader>
+          <CardTitle>📍 Select Delivery Location</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <AddressPicker onSelect={onSelectAddress} />
+          {address?.fullAddress && (
+      <p className="mt-3 text-muted-foreground text-sm">
+        📌 <strong>Selected:</strong> {address.fullAddress}
+      </p>
+    )}
+          {address && suggestion && (
+            <div className="bg-green-100 text-green-800 p-4 mt-4 rounded-md text-sm">
+              ✅ Best slot: <strong>{suggestion.timeSlot}</strong>
+              <br />
+              Nearby orders: {suggestion.peers}
+              <br />
+              Estimated CO₂ saved:{" "}
+              <strong>{suggestion.savings.toFixed(2)} kg</strong>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-      <h2>Select Delivery Location</h2>
-      <AddressPicker onSelect={onSelectAddress}/>
-      {address && suggestion && (
-        <div style={{ margin: '1rem 0', padding: '0.5rem', background: '#e8f5e9' }}>
-          🚀 Best slot: <strong>{suggestion.timeSlot}</strong><br/>
-          Peers nearby: {suggestion.peers} orders<br/>
-          Expected CO₂ saved: {suggestion.savings.toFixed(2)} kg
-        </div>
-      )}
-      
-      <button
-        onClick={handleCheckout}
-        disabled={loading}
-        style={{
-          marginTop: '1rem',
-          padding: '0.5rem 1rem',
-          fontSize: '1rem',
-          cursor: 'pointer'
-        }}
-      >
-        {loading ? 'Placing Order…' : 'Place Order & Earn GreenCoins'}
-      </button>
-      <button onClick={() => window.location.href = '/rewards'}>See Coins</button>
+      <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
+        <Button disabled={loading} onClick={handleCheckout}>
+          {loading ? "Placing Order…" : "Place Order & Earn GreenCoins"}
+        </Button>
+        <Button
+          variant="secondary"
+          onClick={() => (window.location.href = "/rewards")}
+        >
+          See GreenCoins
+        </Button>
+      </div>
+
       {result && (
-        <div style={{ marginTop: '2rem', padding: '1rem', border: '1px solid #4caf50' }}>
-          <h3>🎉 Order Confirmed!</h3>
-          <p>CO₂ Saved: <strong>{(result.co2Saved/1000).toFixed(2)} kg</strong></p>
-          <p>GreenCoins Earned: <strong>{result.rewardCoins}</strong></p>
-        </div>
+        <Card className="border-green-500">
+          <CardHeader>
+            <CardTitle>🎉 Order Confirmed!</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-green-900">
+            <p>
+              CO₂ Saved:{" "}
+              <strong>{(result.co2Saved / 1000).toFixed(2)} kg</strong>
+            </p>
+            <p>
+              GreenCoins Earned: <strong>{result.rewardCoins}</strong>
+            </p>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

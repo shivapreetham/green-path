@@ -32,8 +32,9 @@ export default function AddressPicker({ onSelect }) {
         markerRef.current.setPosition(latLng);
       }
 
-      geocoderRef.current.geocode({ location: latLng }, (results, status) => {
+      geocoderRef.current.geocode({ location: latLng }, (results, status) => {   
         if (status === 'OK' && results[0]) {
+          
           const fullAddress = results[0].formatted_address;
           onSelect({ address: fullAddress, lat: latLng.lat, lng: latLng.lng });
         }

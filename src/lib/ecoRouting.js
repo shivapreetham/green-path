@@ -2,7 +2,7 @@
 
 import polyline from 'polyline';
 
-const GOOGLE_API_KEY       = process.env.GOOGLE_API_KEY;
+const GOOGLE_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
 const EMISSION_RATE_G_PER_KM = 120; // e.g. Petrol vehicle; override per vehicle if needed
 const POI_TYPES = ['school','hospital','shopping_mall','place_of_worship'];
 const POI_RADIUS_M = 100;

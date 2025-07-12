@@ -130,7 +130,12 @@ const orderSchema = new mongoose.Schema({
     required: true
   },
 
-  // ✅ New fields
+  warehouseId: { // ✅ new field
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Warehouse',
+    required: true
+  },
+
   estimatedCO2gIfAlone: {
     type: Number,
     required: true
@@ -144,6 +149,8 @@ const orderSchema = new mongoose.Schema({
     required: true
   }
 }, { timestamps: true });
+
+
 
 
 // Cluster Schema (NEW)

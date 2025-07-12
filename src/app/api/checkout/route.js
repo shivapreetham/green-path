@@ -53,6 +53,7 @@ export async function POST(req) {
                          })),
     totalAmount:         cart.totalAmount,
     timeSlot,
+    warehouseId:         nearest._id, // ✅ added field
     estimatedCO2gIfAlone: soloMetrics.co2g,
     actualCO2gInCluster:  0,
     co2Saved:             0

@@ -1,107 +1,137 @@
+// app/checkout/page.jsx  (or pages/checkout.jsx)
 'use client';
 
-import { useEffect, useState } from 'react';
-import AddressPicker from '@/components/AddressPicker';
+import React, { useState, useEffect } from 'react';
+import AddressPicker from '@/components/PickAddress';
 import useCartStore from '@/store/cartStore';
-import { useRouter } from 'next/navigation';
 
 export default function CheckoutPage() {
   const [address, setAddress] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { cart, fetchCart, clearCart } = useCartStore();
-  const router = useRouter();
+  const [timeSlot, setTimeSlot] = useState('morning');
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [suggestion, setSuggestion] = useState(null);
+  const {sessionId, fetchCart, cart} = useCartStore();
 
-  // Fetch cart data when the component mounts
   useEffect(() => {
-    fetchCart();
-  }, [fetchCart]);
+      if (!sessionId) return;           // wait until sessionId is non-null
+      setLoading(true);
+      console.log(`Fetching cart for session ID: ${sessionId}`);
 
-  const handleSubmit = async () => {
-    // Validate address and cart
-    if (!address || cart.items.length === 0) {
-      alert("Please select an address and ensure your cart isn't empty.");
+      fetchCart()                        // your store’s fetchCart should set `cart`
+        .catch(console.error)
+        .finally(() => setLoading(false));
+    }, [sessionId, fetchCart]);
+
+  useEffect(()=>{
+      if(!result) return;
+      const rewardCoins = result?.rewardCoins || 0;
+      const alreadyCoins = JSON.parse(localStorage.getItem('checkoutResult') || 0);
+      localStorage.setItem('checkoutResult', JSON.stringify(alreadyCoins + rewardCoins));
+  },[result])
+
+  const handleCheckout = async () => {
+    if (!address) {
+      alert('Please select your delivery location on the map.');
       return;
     }
+    setLoading(true);
+    setResult(null);
 
-    setIsSubmitting(true); // Disable button during submission
+    const payload = {
+      sessionId,
+      address: {
+        fullAddress: '', // optionally reverse-geocode
+        lat: address.lat,
+        lng: address.lng
+      },
+      timeSlot
+    };
 
-    try {
-      const orderData = {
-        customerName: 'sexy boi', // TODO: Replace with authenticated user data
-        address: {
-          fullAddress: address.address,
-          lat: address.lat,
-          lng: address.lng,
-        },
-        items: cart.items.map(item => ({
-          productId: item.productId._id || item.productId, // Handle populated or raw ID
-          quantity: item.quantity,
-          priceAtTime: item.priceAtTime,
-        })),
-        totalAmount: cart.totalAmount,
-      };
-
-      const res = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderData),
-      });
-
-      if (res.ok) {
-        alert('✅ Order placed successfully!');
-        clearCart(); // Clear cart after successful order
-        router.push('/orders'); // Redirect to orders page
-      } else {
-        const errorData = await res.json();
-        alert(`❌ Failed to place order: ${errorData.error || 'Unknown error'}`);
-      }
-    } catch (error) {
-      alert('❌ An error occurred while placing the order');
-      console.error('Order submission error:', error);
-    } finally {
-      setIsSubmitting(false); // Re-enable button
-    }
+    const res = await fetch('/api/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    setResult(data);
+    setLoading(false);
   };
 
+   // When user selects location:
+  const onSelectAddress = async (pos) => {
+    setAddress(pos);
+    // 1) Ask the server for best slot
+    const res = await fetch('/api/checkout/suggest-slot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(pos)
+    });
+    const data = await res.json();
+    setSuggestion(data.best);
+    // optionally pre‑select that slot:
+    setTimeSlot(data.best.timeSlot);
+  };
+
+  if (!cart) return <p>Loading cart…</p>;
+
   return (
-    <div className="p-4 max-w-lg mx-auto">
-      <h1 className="text-xl font-bold mb-4">Checkout</h1>
+    <div style={{ maxWidth: 600, margin: '2rem auto', padding: '0 1rem' }}>
+      <h1>Checkout</h1>
 
-      {/* Address Picker */}
-      <AddressPicker onSelect={(addr) => setAddress(addr)} />
+      <h2>Order Summary</h2>
+      <ul>
+        {cart.items.map((item) => (
+          <li key={item.productId}>
+            {item.name} × {item.quantity} — ₹{item.priceAtTime.toFixed(2)}
+          </li>
+        ))}
+      </ul>
+      <p><strong>Total: ₹{cart.totalAmount.toFixed(2)}</strong></p>
 
-      {/* Display selected address */}
-      {address && (
-        <div className="mt-2 text-sm bg-gray-100 p-2 rounded">
-          <p><strong>Selected:</strong> {address.address}</p>
+      <h2>Select Delivery Time Slot</h2>
+      {['morning','afternoon','evening'].map((slot) => (
+        <label key={slot} style={{ marginRight: '1rem' }}>
+          <input
+            type="radio"
+            name="timeslot"
+            value={slot}
+            checked={timeSlot === slot}
+            onChange={() => setTimeSlot(slot)}
+          /> {slot.charAt(0).toUpperCase()+slot.slice(1)}
+        </label>
+      ))}
+
+      <h2>Select Delivery Location</h2>
+      <AddressPicker onSelect={onSelectAddress}/>
+      {address && suggestion && (
+        <div style={{ margin: '1rem 0', padding: '0.5rem', background: '#e8f5e9' }}>
+          🚀 Best slot: <strong>{suggestion.timeSlot}</strong><br/>
+          Peers nearby: {suggestion.peers} orders<br/>
+          Expected CO₂ saved: {suggestion.savings.toFixed(2)} kg
         </div>
       )}
-
-      {/* Cart Summary */}
-      <div className="mt-4 bg-white p-3 border rounded">
-        <h2 className="font-semibold mb-2">🛒 Your Cart</h2>
-        {cart.items.length === 0 ? (
-          <p className="text-sm text-gray-500">Your cart is empty.</p>
-        ) : (
-          cart.items.map((item, idx) => (
-            <div key={idx} className="text-sm mb-1">
-              <p>
-                {item.productId.name} × {item.quantity} = ₹{item.priceAtTime * item.quantity}
-              </p>
-            </div>
-          ))
-        )}
-        <p className="mt-2 font-medium">Total: ₹{cart.totalAmount}</p>
-      </div>
-
-      {/* Place Order Button */}
+      
       <button
-        onClick={handleSubmit}
-        disabled={isSubmitting || cart.items.length === 0}
-        className="bg-blue-500 text-white p-2 rounded mt-4 w-full disabled:opacity-50"
+        onClick={handleCheckout}
+        disabled={loading}
+        style={{
+          marginTop: '1rem',
+          padding: '0.5rem 1rem',
+          fontSize: '1rem',
+          cursor: 'pointer'
+        }}
       >
-        {isSubmitting ? 'Placing Order...' : '🧾 Place Order'}
+        {loading ? 'Placing Order…' : 'Place Order & Earn GreenCoins'}
       </button>
+      <button onClick={() => window.location.href = '/rewards'}>See Coins</button>
+      {result && (
+        <div style={{ marginTop: '2rem', padding: '1rem', border: '1px solid #4caf50' }}>
+          <h3>🎉 Order Confirmed!</h3>
+          <p>CO₂ Saved: <strong>{(result.co2Saved/1000).toFixed(2)} kg</strong></p>
+          <p>GreenCoins Earned: <strong>{result.rewardCoins}</strong></p>
+        </div>
+      )}
     </div>
   );
 }

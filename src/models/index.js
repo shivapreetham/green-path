@@ -82,7 +82,6 @@ cartSchema.methods.calculateTotals = function () {
 };
 
 // Recommendation Schema
-// Recommendation Schema
 const recommendationSchema = new mongoose.Schema({
   sourceProductId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
   recommendedProductId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
@@ -99,7 +98,6 @@ const recommendationSchema = new mongoose.Schema({
 recommendationSchema.index({ sourceProductId: 1, carbonSavings: -1 });
 recommendationSchema.index({ recommendedProductId: 1 });
 
-// Product Analytics Schema
 // Product Analytics Schema
 const productAnalyticsSchema = new mongoose.Schema({
   productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
@@ -132,7 +130,12 @@ const orderSchema = new mongoose.Schema({
     required: true
   },
 
-  // ✅ New fields
+  warehouseId: { // ✅ new field
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Warehouse',
+    required: true
+  },
+
   estimatedCO2gIfAlone: {
     type: Number,
     required: true
@@ -146,6 +149,8 @@ const orderSchema = new mongoose.Schema({
     required: true
   }
 }, { timestamps: true });
+
+
 
 
 // Cluster Schema (NEW)
@@ -191,6 +196,13 @@ const clusterSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+const coinsSchema = new mongoose.Schema({
+  coins: {
+    type: Number,
+    default: 0
+  }
+}, { timestamps: true });
+
 // Models
 const Product = mongoose.models.Product || mongoose.model('Product', productSchema);
 const Cart = mongoose.models.Cart || mongoose.model('Cart', cartSchema);
@@ -200,6 +212,7 @@ const Order = mongoose.models.Order || mongoose.model('Order', orderSchema);
 const Warehouse = mongoose.models.Warehouse || mongoose.model('Warehouse', warehouseSchema);
 const Inventory = mongoose.models.Inventory || mongoose.model('Inventory', inventorySchema);
 const Cluster = mongoose.models.Cluster || mongoose.model('Cluster', clusterSchema);
+const Coins = mongoose.models.Coins || mongoose.model('Coins', coinsSchema);
 
 // Export
 export {
@@ -210,5 +223,6 @@ export {
   Order,
   Warehouse,
   Inventory,
-  Cluster // New
+  Cluster,
+  Coins
 };

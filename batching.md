@@ -77,3 +77,5 @@ for slot in upcoming_time_slots:
 * Shorter delivery routes
 * Efficient batching per region and time window
 * Scalable across Walmart stores and customer delivery slots
+
+Rewars System:

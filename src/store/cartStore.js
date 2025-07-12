@@ -18,6 +18,7 @@ const useCartStore = create(
           sessionId = uuidv4();
           set({ sessionId });
         }
+        console.log('Session ID:', sessionId);
         return sessionId;
       },
 

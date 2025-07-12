@@ -329,8 +329,6 @@ async function populateDatabase() {
 }
 
 // Run the script
-if (import.meta.url === `file://${process.argv[1]}`) {
-  populateDatabase();
-}
+populateDatabase();
 
 export default populateDatabase;

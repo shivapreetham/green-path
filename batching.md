@@ -8,10 +8,10 @@ This document explains how we group delivery orders into optimized route batches
 
 Walmart receives multiple delivery orders across different regions and times. To deliver efficiently, we aim to:
 
-* Batch nearby delivery addresses together
-* Optimize routes from each Walmart store
-* Consider carbon footprint, AQI, and sensitive zones
-* Respect delivery **time slots** customers selected
+* Batch nearby delivery addresses together  
+* Optimize routes from each Walmart store  
+* Consider carbon footprint, AQI, and sensitive zones  
+* Respect delivery **time slots** customers selected  
 
 ---
 
@@ -19,29 +19,28 @@ Walmart receives multiple delivery orders across different regions and times. To
 
 ### Step-by-Step:
 
-1. **Fetch all unbatched delivery orders from the database** (no store assigned yet)
-2. **Iterate over upcoming time slots**:
+1. **For each upcoming time slot**:
+   * Fetch all delivery orders scheduled for that slot 
+   * Cluster orders geographically using DBSCAN
+   * For each cluster:
+     * **Find the nearest Walmart store** to the cluster center
+     * **Assign the store ID** to all orders in the cluster
+     * **Use the `eco_route()` function** to compute an optimized delivery route
+     * **Store the result** with a unique `batch_id`
 
-   * For each time slot:
-
-     * Cluster orders in that slot geographically using DBSCAN
-     * For each cluster:
-
-       * **Find the nearest Walmart store** to the cluster center
-       * Assign that store to all orders in the cluster
-       * **Use the `eco_route()` function** to compute an optimized delivery route
-       * **Store the result** with a unique `batch_id`
+📝 **Note**: Clustering is **recomputed** every time a new order is added, ensuring dynamic and updated route optimization.
 
 ---
 
 ## 🧾 Sample Pseudo Code
 
+```javascript
 for slot in upcoming_time_slots:
-    pending_orders = get_unbatched_orders(slot) //db call
-    clusters = cluster_orders(pending_orders)  //backend call
+    pending_orders = get_orders_for_slot(slot)              // db call
+    clusters = cluster_orders(pending_orders)               // backend call
 
     for cluster in clusters:
-        nearest_store = find_nearest_store(cluster, all_stores)  //backend call
+        nearest_store = find_nearest_store(cluster, all_stores)  // backend call
 
         result = eco_route({
             "source": {
@@ -49,10 +48,11 @@ for slot in upcoming_time_slots:
                 "lng": nearest_store["lng"]
             },
             "destinations": cluster
-        })  //backend call
+        })  // backend call
 
         assign_orders_to_store(cluster, nearest_store["id"])
         save_route(batch_id=generate_batch_id(), route=result, time_slot=slot)
+
 
 ---
 

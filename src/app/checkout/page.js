@@ -1,137 +1,296 @@
-// app/checkout/page.jsx  (or pages/checkout.jsx)
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import AddressPicker from '@/components/PickAddress';
 import useCartStore from '@/store/cartStore';
+import {
+  Loader2,
+  MapPin,
+  ShoppingCart,
+  Timer,
+  Coins,
+  ArrowRightCircle,
+} from 'lucide-react';
+import { motion } from 'framer-motion';
+import confetti from 'canvas-confetti';
 
 export default function CheckoutPage() {
   const [address, setAddress] = useState(null);
-  const [timeSlot, setTimeSlot] = useState('morning');
+  const [timeSlot, setTimeSlot] = useState(null);
+  const [allSlots, setAllSlots] = useState([]);
+  const [bestSlot, setBestSlot] = useState(null);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [loadingCheckout, setLoadingCheckout] = useState(false);
   const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [suggestion, setSuggestion] = useState(null);
-  const {sessionId, fetchCart, cart} = useCartStore();
+
+  const { sessionId, fetchCart, cart } = useCartStore();
 
   useEffect(() => {
-      if (!sessionId) return;           // wait until sessionId is non-null
-      setLoading(true);
-      console.log(`Fetching cart for session ID: ${sessionId}`);
+    if (!sessionId) return;
+    fetchCart().catch(console.error);
+  }, [sessionId]);
 
-      fetchCart()                        // your store’s fetchCart should set `cart`
-        .catch(console.error)
-        .finally(() => setLoading(false));
-    }, [sessionId, fetchCart]);
-
-  useEffect(()=>{
-      if(!result) return;
-      const rewardCoins = result?.rewardCoins || 0;
-      const alreadyCoins = JSON.parse(localStorage.getItem('checkoutResult') || 0);
-      localStorage.setItem('checkoutResult', JSON.stringify(alreadyCoins + rewardCoins));
-  },[result])
+  useEffect(() => {
+    if (!result) return;
+    const rewardCoins = result?.rewardCoins || 0;
+    const alreadyCoins = JSON.parse(localStorage.getItem('checkoutResult') || 0);
+    localStorage.setItem('checkoutResult', JSON.stringify(alreadyCoins + rewardCoins));
+    confetti({
+      particleCount: 120,
+      spread: 90,
+      origin: { y: 0.6 },
+      colors: ['#34d399', '#10b981', '#22c55e', '#a7f3d0'],
+    });
+  }, [result]);
 
   const handleCheckout = async () => {
-    if (!address) {
-      alert('Please select your delivery location on the map.');
+    if (!address || !timeSlot) {
+      alert('Please select your delivery location and a time slot.');
       return;
     }
-    setLoading(true);
+
+    setLoadingCheckout(true);
     setResult(null);
 
     const payload = {
       sessionId,
       address: {
-        fullAddress: '', // optionally reverse-geocode
+        fullAddress: address.fullAddress,
         lat: address.lat,
-        lng: address.lng
+        lng: address.lng,
       },
-      timeSlot
+      timeSlot,
     };
 
     const res = await fetch('/api/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     });
     const data = await res.json();
     setResult(data);
-    setLoading(false);
+    setLoadingCheckout(false);
   };
 
-   // When user selects location:
   const onSelectAddress = async (pos) => {
     setAddress(pos);
-    // 1) Ask the server for best slot
+    setLoadingSlots(true);
+    setTimeSlot(null);
+    setAllSlots([]);
+    setBestSlot(null);
+
     const res = await fetch('/api/checkout/suggest-slot', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(pos)
+      body: JSON.stringify(pos),
     });
     const data = await res.json();
-    setSuggestion(data.best);
-    // optionally pre‑select that slot:
+    setBestSlot(data.best);
+    setAllSlots(data.all);
     setTimeSlot(data.best.timeSlot);
+    setLoadingSlots(false);
   };
 
-  if (!cart) return <p>Loading cart…</p>;
+  if (!cart) {
+    return (
+      <div className="max-w-xl mx-auto mt-20">
+        <Skeleton className="h-8 w-full mb-4" />
+        <Skeleton className="h-4 w-1/2 mb-2" />
+        <Skeleton className="h-4 w-2/3 mb-2" />
+        <Skeleton className="h-10 w-full" />
+      </div>
+    );
+  }
 
-  return (
-    <div style={{ maxWidth: 600, margin: '2rem auto', padding: '0 1rem' }}>
-      <h1>Checkout</h1>
+    return (
+    <motion.div
+      className="max-w-3xl mx-auto p-6 space-y-6"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+    >
+      {/* Order Summary */}
+      <Card className="shadow-lg">
+        <CardHeader className="flex items-center gap-2">
+          <ShoppingCart className="text-orange-600" />
+          <CardTitle className="text-xl font-bold text-gray-800">
+            Order Summary
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-base text-gray-700">
+          {cart.items.map((item) => (
+            <div key={item.productId} className="flex justify-between">
+              <span>{item.name} × {item.quantity}</span>
+              <span className="font-medium">₹{item.priceAtTime.toFixed(2)}</span>
+            </div>
+          ))}
+          <div className="flex justify-between font-semibold pt-2 border-t">
+            <span>Total</span>
+            <span className="text-lg font-bold text-gray-900">
+              ₹{cart.totalAmount.toFixed(2)}
+            </span>
+          </div>
+        </CardContent>
+      </Card>
 
-      <h2>Order Summary</h2>
-      <ul>
-        {cart.items.map((item) => (
-          <li key={item.productId}>
-            {item.name} × {item.quantity} — ₹{item.priceAtTime.toFixed(2)}
-          </li>
-        ))}
-      </ul>
-      <p><strong>Total: ₹{cart.totalAmount.toFixed(2)}</strong></p>
+      {/* Address Picker */}
+      <Card className="shadow-lg">
+        <CardHeader className="flex items-center gap-2">
+          <MapPin className="text-blue-600" />
+          <CardTitle className="text-xl font-bold text-gray-800">
+            Select Delivery Location
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <AddressPicker onSelect={onSelectAddress} />
+          {address?.fullAddress && (
+            <motion.div
+              className="mt-4 p-4 bg-blue-50 rounded-lg text-sm text-gray-900 flex gap-2 items-start border border-blue-200"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              <MapPin className="w-5 h-5 mt-0.5 text-blue-500" />
+              <div>
+                <strong className="block mb-1">Selected Address:</strong>
+                <span className="text-[18px]">{address.fullAddress}</span>
+              </div>
+            </motion.div>
+          )}
+        </CardContent>
+      </Card>
 
-      <h2>Select Delivery Time Slot</h2>
-      {['morning','afternoon','evening'].map((slot) => (
-        <label key={slot} style={{ marginRight: '1rem' }}>
-          <input
-            type="radio"
-            name="timeslot"
-            value={slot}
-            checked={timeSlot === slot}
-            onChange={() => setTimeSlot(slot)}
-          /> {slot.charAt(0).toUpperCase()+slot.slice(1)}
-        </label>
-      ))}
-
-      <h2>Select Delivery Location</h2>
-      <AddressPicker onSelect={onSelectAddress}/>
-      {address && suggestion && (
-        <div style={{ margin: '1rem 0', padding: '0.5rem', background: '#e8f5e9' }}>
-          🚀 Best slot: <strong>{suggestion.timeSlot}</strong><br/>
-          Peers nearby: {suggestion.peers} orders<br/>
-          Expected CO₂ saved: {suggestion.savings.toFixed(2)} kg
-        </div>
+      {/* Loader */}
+      {loadingSlots && (
+        <motion.div
+          className="flex flex-col items-center gap-3 py-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          <Loader2 className="animate-spin w-8 h-8 text-blue-600" />
+          <p className="text-center text-gray-700 font-medium">
+            🌍 Finding the most eco-friendly delivery route…
+          </p>
+          <div className="w-56 h-2 bg-gray-200 rounded-full overflow-hidden">
+            <motion.div
+              className="h-full bg-gradient-to-r from-green-400 to-blue-500"
+              initial={{ x: '-100%' }}
+              animate={{ x: '100%' }}
+              transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }}
+            />
+          </div>
+        </motion.div>
       )}
-      
-      <button
-        onClick={handleCheckout}
-        disabled={loading}
-        style={{
-          marginTop: '1rem',
-          padding: '0.5rem 1rem',
-          fontSize: '1rem',
-          cursor: 'pointer'
-        }}
-      >
-        {loading ? 'Placing Order…' : 'Place Order & Earn GreenCoins'}
-      </button>
-      <button onClick={() => window.location.href = '/rewards'}>See Coins</button>
+
+      {/* Time Slots */}
+      {!loadingSlots && allSlots.length > 0 && (
+        <Card className="shadow-md border">
+          <CardHeader className="flex items-center gap-2">
+            <Timer className="text-purple-600" />
+            <CardTitle className="text-xl font-bold text-gray-800">
+              Choose Delivery Time Slot
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+              {allSlots.map((slot) => {
+                const isSelected = slot.timeSlot === timeSlot;
+                const isBest = slot.timeSlot === bestSlot.timeSlot;
+                return (
+                  <motion.div
+                    key={slot.timeSlot}
+                    onClick={() => setTimeSlot(slot.timeSlot)}
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    className={`
+                      card-slot-base
+                      ${isSelected ? 'border-green-600 bg-green-50 shadow-lg' : ''}
+                      ${isBest ? 'card-slot-highlight' : ''}
+                    `}
+                  >
+                    {isBest && (
+                      <motion.div
+                        className="absolute top-2 right-2 text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-0.5 rounded-full shadow-md animate-pulse"
+                        initial={{ scale: 0.8 }}
+                        animate={{ scale: 1 }}
+                        transition={{ repeat: Infinity, duration: 1.6, repeatType: 'mirror' }}
+                      >
+                        ⭐ Best Option
+                      </motion.div>
+                    )}
+                    <div className="text-lg font-semibold text-gray-800 flex items-center gap-2 capitalize">
+                      ⏰ {slot.timeSlot}
+                    </div>
+                    <p className="text-[15px] text-gray-700 mt-2 leading-relaxed whitespace-nowrap">
+                      🌿 <strong>Peers Nearby:</strong> {slot.peers}<br />
+                      💨 <strong className="text-green-700 text-base">
+                        CO₂ Saved: {slot.savings.toFixed(2)} kg
+                      </strong>
+                    </p>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Actions */}
+      <div className="flex flex-col md:flex-row gap-4 justify-between items-center pt-4">
+        <Button
+          disabled={loadingCheckout || !timeSlot}
+          onClick={handleCheckout}
+          className="btn-fancy w-full md:w-auto text-base"
+        >
+          {loadingCheckout ? (
+            <>
+              <Loader2 className="animate-spin w-4 h-4 mr-2" />
+              Placing Order…
+            </>
+          ) : (
+            <>
+              🌱 Place Order & Earn <Coins className="w-4 h-4 ml-1" />
+            </>
+          )}
+        </Button>
+        <Button
+          variant="secondary"
+          onClick={() => (window.location.href = '/rewards')}
+          className="btn-secondary-fancy flex items-center gap-2 text-base"
+        >
+          See GreenCoins <ArrowRightCircle className="w-4 h-4" />
+        </Button>
+      </div>
+
+      {/* Confirmation */}
       {result && (
-        <div style={{ marginTop: '2rem', padding: '1rem', border: '1px solid #4caf50' }}>
-          <h3>🎉 Order Confirmed!</h3>
-          <p>CO₂ Saved: <strong>{(result.co2Saved/1000).toFixed(2)} kg</strong></p>
-          <p>GreenCoins Earned: <strong>{result.rewardCoins}</strong></p>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <Card className="border-green-500 shadow-md mt-6">
+            <CardHeader className="flex items-center gap-2">
+              🎉 <CardTitle className="text-xl font-bold text-green-800">
+                Order Confirmed!
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-base text-green-900 space-y-2">
+              <p className="font-semibold">
+                💨 CO₂ Saved: <strong>{(result.co2Saved / 1000).toFixed(2)} kg</strong>
+              </p>
+              <p className="font-semibold">
+                🪙 GreenCoins Earned: <strong>{result.rewardCoins}</strong>
+              </p>
+            </CardContent>
+          </Card>
+        </motion.div>
       )}
-    </div>
+    </motion.div>
   );
 }

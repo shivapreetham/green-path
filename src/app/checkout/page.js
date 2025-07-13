@@ -181,7 +181,7 @@ export default function CheckoutPage() {
         </p>
         <div className="w-56 h-2 bg-gray-200 rounded-full overflow-hidden">
           <motion.div
-            className="h-full bg-gradient-to-r from-green-400 to-blue-500"
+            className="h-full bg-[#32C268]"
             initial={{ x: '-100%' }}
             animate={{ x: '100%' }}
             transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }}
@@ -222,12 +222,12 @@ export default function CheckoutPage() {
           <div className="flex-1">
             {isBest && (
               <motion.div
-                className="absolute top-2 right-2 text-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-0.5 rounded-full shadow-md animate-pulse"
+                className="absolute top-2 right-2 text-lg bg-[#32C268] text-white px-2 py-0.5 rounded-full shadow-md animate-pulse"
                 initial={{ scale: 0.8 }}
                 animate={{ scale: 1 }}
                 transition={{ repeat: Infinity, duration: 1.6, repeatType: 'mirror' }}
               >
-                ⭐ Best Option
+                🌱 Best Option
               </motion.div>
             )}
             <div className="text-lg font-semibold text-gray-800 capitalize">

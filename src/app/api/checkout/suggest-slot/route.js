@@ -54,7 +54,7 @@ export async function POST(req) {
     results.push({
       timeSlot,
       peers: peerAddrs.length,
-      savings: parseFloat(savings.toFixed(2))
+      savings: parseFloat((savings/1000).toFixed(2))
     });
   }
 

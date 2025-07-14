@@ -234,7 +234,7 @@ export default function ProductsPage() {
                     </p>
                     <div className="flex items-center justify-between mb-4">
                       <span className="text-2xl font-bold text-green-600">
-                        ${product.price.toFixed(2)}
+                        ₹{product.price.toFixed(2)}
                       </span>
                       <div className="text-sm text-gray-500">
                         Carbon: {product.carbonFootprint}

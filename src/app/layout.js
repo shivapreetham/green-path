@@ -6,7 +6,7 @@ import Link from 'next/link';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
-  title: 'EcoWalmartian - Carbon free Shopping',
+  title: 'EcoWalmartian - Walmart\'s Greenverse',
   description: 'Discover eco-friendly alternatives and make sustainable choices',
 };
 

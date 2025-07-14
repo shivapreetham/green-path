@@ -4,7 +4,7 @@ import connectDB from '@/lib/db'
 import { Product, Inventory } from '@/models'
 
 /**
- * Utility: Recommend 4 random products from the same category (excluding self)
+ * Utility: Recommend 2 random products from the same category (excluding self)
  */
 async function getRecommendations(currentProductId, category) {
   return await Product.aggregate([
@@ -15,7 +15,7 @@ async function getRecommendations(currentProductId, category) {
         isActive: true
       }
     },
-    { $sample: { size: 4 } }, // random 4 recommendations
+    { $sample: { size: 2 } }, 
     {
       $lookup: {
         from: 'inventories',

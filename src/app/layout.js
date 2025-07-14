@@ -6,7 +6,7 @@ import Link from 'next/link';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
-  title: 'GreenPath - Eco-Friendly Shopping',
+  title: 'EcoWalmartian - Carbon free Shopping',
   description: 'Discover eco-friendly alternatives and make sustainable choices',
 };
 
@@ -36,7 +36,7 @@ function Header() {
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="flex items-center space-x-2">
             <span className="text-2xl">🌱</span>
-            <span className="text-xl font-bold text-green-600">GreenPath</span>
+            <span className="text-xl font-bold text-green-600">EcoWalmartian</span>
           </Link>
           
           <nav className="hidden md:flex items-center space-x-8">

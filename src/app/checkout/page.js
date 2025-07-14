@@ -116,17 +116,9 @@ export default function CheckoutPage() {
     setLoadingCheckout(false);
   };
 
+  // REVERTED: Back to original onSelectAddress logic
   const onSelectAddress = async (pos) => {
     setAddress(pos);
-    setSelectedDate(null); // Reset date selection
-    setTimeSlot(null);
-    setAllSlots([]);
-    setBestSlot(null);
-    // Don't load slots until date is selected
-  };
-
-  const onSelectDate = async (dateData) => {
-    setSelectedDate(dateData);
     setLoadingSlots(true);
     setTimeSlot(null);
     setAllSlots([]);
@@ -135,22 +127,19 @@ export default function CheckoutPage() {
     const res = await fetch('/api/checkout/suggest-slot', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(address),
+      body: JSON.stringify(pos),
     });
     const data = await res.json();
-    
-    // Add bonus CO2 savings for recommended day
-    const bonusMultiplier = dateData.isRecommended ? 1.3 : 1;
-    const enhancedSlots = data.all.map(slot => ({
-      ...slot,
-      savings: slot.savings * bonusMultiplier,
-      peers: slot.peers + (dateData.isRecommended ? 2 : 0)
-    }));
-
-    setBestSlot({ ...data.best, savings: data.best.savings * bonusMultiplier });
-    setAllSlots(enhancedSlots);
+    setBestSlot(data.best);
+    setAllSlots(data.all);
     setTimeSlot(data.best.timeSlot);
     setLoadingSlots(false);
+  };
+
+  // NEW: Added date selection handler (but it doesn't interfere with slot loading)
+  const onSelectDate = (dateData) => {
+    setSelectedDate(dateData);
+    // Date selection doesn't reload slots - slots are loaded when address is selected
   };
 
   if (!cart) {
@@ -217,7 +206,7 @@ export default function CheckoutPage() {
         </Card>
       </div>
 
-      {/* Date Selection Calendar */}
+      {/* Date Selection Calendar - ONLY THIS PART IS NEW */}
       {address && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -308,7 +297,7 @@ export default function CheckoutPage() {
         </motion.div>
       )}
 
-      {/* Loader */}
+      {/* REVERTED: Back to original loader logic */}
       {loadingSlots && (
         <motion.div
           className="flex flex-col items-center gap-3 py-6"
@@ -317,7 +306,7 @@ export default function CheckoutPage() {
         >
           <Loader2 className="animate-spin w-8 h-8 text-blue-600" />
           <p className="text-center text-gray-700 font-medium">
-            🌍 Finding the most eco-friendly delivery route for {selectedDate?.dayName}…
+            🌍 Finding the most eco-friendly delivery route…
           </p>
           <div className="w-56 h-2 bg-gray-200 rounded-full overflow-hidden">
             <motion.div
@@ -330,19 +319,12 @@ export default function CheckoutPage() {
         </motion.div>
       )}
 
-      {/* Time Slots Block View */}
-      {!loadingSlots && selectedDate && allSlots.length > 0 && (
+      {/* REVERTED: Back to original time slot logic */}
+      {!loadingSlots && allSlots.length > 0 && (
         <Card className="shadow-md border">
           <CardHeader className="flex items-center gap-2">
             <Timer className="text-purple-600" />
-            <CardTitle className="text-xl font-bold text-gray-800">
-              Choose Time Slot for {selectedDate.dayName}
-              {selectedDate.isRecommended && (
-                <span className="ml-2 text-sm bg-green-100 text-green-700 px-2 py-1 rounded-full">
-                  🎉 Bonus CO₂ savings today!
-                </span>
-              )}
-            </CardTitle>
+            <CardTitle className="text-xl font-bold text-gray-800">Choose Delivery Time Slot</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {allSlots.map((slot) => {
@@ -384,11 +366,6 @@ export default function CheckoutPage() {
                       🌿 <strong>Peers Nearby:</strong> {slot.peers}<br />
                       💨 <strong className="text-green-700 text-base whitespace-nowrap">
                         CO₂ Saved: {slot.savings.toFixed(2)} kg
-                        {selectedDate.isRecommended && (
-                          <span className="text-xs ml-1 bg-green-200 text-green-800 px-1 rounded">
-                            +30% bonus!
-                          </span>
-                        )}
                       </strong>
                     </p>
                   </div>
@@ -439,19 +416,16 @@ export default function CheckoutPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="text-base text-green-900 space-y-2">
-              <p>
-                📅 Delivery Date: <strong>{selectedDate.dayName}, {selectedDate.dayNumber} {selectedDate.month}</strong>
-              </p>
+              {selectedDate && (
+                <p>
+                  📅 Delivery Date: <strong>{selectedDate.dayName}, {selectedDate.dayNumber} {selectedDate.month}</strong>
+                </p>
+              )}
               <p>
                 ⏰ Time Slot: <strong className="capitalize">{timeSlot}</strong>
               </p>
               <p>
                 💨 CO₂ Saved: <strong>{(result.co2Saved / 1000).toFixed(2)} kg</strong>
-                {selectedDate.isRecommended && (
-                  <span className="ml-2 text-sm bg-green-200 text-green-800 px-2 py-1 rounded">
-                    +30% bonus applied!
-                  </span>
-                )}
               </p>
               <p>
                 🪙 GreenCoins Earned: <strong>{result.rewardCoins}</strong>

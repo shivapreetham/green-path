@@ -146,7 +146,7 @@ export default function ProductDetailPage() {
               <p className="text-gray-600 mb-4">{product?.brand}</p>
               <div className="flex items-center gap-3 mb-4">
                 <span className="text-3xl font-bold text-green-600">
-                  ${product?.price?.toFixed(2)}
+                  ₹{product?.price?.toFixed(2)}
                 </span>
                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${getCarbonFootprintColor(product?.carbonFootprint)}`}>
                   {getCarbonFootprintLabel(product?.carbonFootprint)} ({product?.carbonFootprint} CO2)
@@ -235,7 +235,7 @@ export default function ProductDetailPage() {
                     <h3 className="font-semibold text-gray-800 mb-2">{rec.name}</h3>
                     <p className="text-gray-600 text-sm mb-3">{rec.brand}</p>
                     <div className="flex justify-between items-center mb-3">
-                      <span className="text-xl font-bold text-green-600">${rec.price?.toFixed(2)}</span>
+                      <span className="text-xl font-bold text-green-600">₹{rec.price?.toFixed(2)}</span>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${getCarbonFootprintColor(rec.carbonFootprint)}`}>
                         {rec.carbonFootprint} CO2
                       </span>

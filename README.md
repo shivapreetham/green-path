@@ -1,51 +1,51 @@
 # 🌿 Green‑Path
 
-**Green‑Path** is a Next.js client application that lets users place delivery orders and visualize eco‑optimized batching & routing on Google Maps. By comparing a “naïve” route vs. an “eco” route, it highlights CO₂ savings and smarter delivery planning.
-
-<p align="center">
-  <!-- Replace with your own demo GIF or screenshot -->
-  <img src="docs/demo.gif" alt="Green‑Path Demo" width="800" />
-</p>
+An interactive Next.js application that lets users place delivery orders, see eco‑optimized batching and routing on Google Maps, and compare CO₂ savings versus a naïve route.
 
 ---
 
-## 🚀 Features
+## 🎯 Problem
 
-- **Order Placement**  
-  Interactive map-based address picker for users to select delivery locations.
+- Inefficient delivery slot selection → high‑emission trips  
+- Customers unaware of their sustainability impact  
+- Non‑optimized logistics routes → longer distance & higher emissions  
+- No incentives for eco‑friendly choices  
 
-- **Batching Logic**  
-  Group multiple orders into delivery batches behind the scenes to minimize trips.
+---
 
-- **Dual‑Route Visualization**  
-  - 🌿 **Eco Route:** Multi‑color polylines showing energy‑efficient path segments.  
-  - 🛣️ **Naïve Route:** Red dashed line for standard shortest‑path routing.
+## 💡 Solution Overview
 
-- **Truck Animation**  
-  Real‑time moving truck marker animates along the chosen route.
+1. **Order Placement & Slot Suggestion**  
+   - Users pick delivery locations on an embedded Google Map  
+   - System recommends the most eco‑friendly time slot  
 
-- **Info Windows & Labels**  
-  Click on markers to view order details; orders are labeled A, B, C… for clarity.
+2. **Batching & Route Visualization**  
+   - Groups spatially/temporally close orders into batches  
+   - Shows two routes side‑by‑side:  
+     - 🌿 **Eco Route:** multi‑color segments optimized for emissions, AQI, and sensitive‑zone avoidance  
+     - 🛣️ **Naïve Route:** red dashed shortest‑path baseline  
 
-- **Legend & Controls**  
-  Toggle between “Eco” and “Naïve” views; map auto‑fits bounds on load.
+3. **Metrics & Incentives**  
+   - CO₂ savings, AQI exposure reduction, distance/time trade‑offs  
+   - Users earn “EcoCoins” and build sustainability streaks  
 
 ---
 
 ## 🛠 Tech Stack
 
 - **Framework:** Next.js (App Router)  
-- **Language:** TypeScript & React  
-- **Styling:** Tailwind CSS & Framer Motion  
-- **Maps:** Google Maps JavaScript API via `@react-google-maps/api`  
-- **Animation:** requestAnimationFrame (truck), Framer Motion (UI)  
-- **Icons & UI:** lucide‑react, canvas‑confetti  
+- **UI:** React, Tailwind CSS, Shadcn/ui, Framer Motion  
+- **Maps:** Google Maps JS API via `@react-google-maps/api`  
+- **State:** Zustand (lightweight store)  
+- **Animations:** requestAnimationFrame for truck, Framer Motion for UI  
+- **Icons & Effects:** lucide‑react, canvas‑confetti  
 
 ---
 
-## ⚙️ Quick Start
+## 🚀 Getting Started
 
-1. **Clone the repo**  
+1. Clone & install  
    ```bash
    git clone https://github.com/shivapreetham/green-path.git
    cd green-path
+   npm install

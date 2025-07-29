@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# 🌿 Green‑Path
 
-## Getting Started
+**Green‑Path** is a Next.js client application that lets users place delivery orders and visualize eco‑optimized batching & routing on Google Maps. By comparing a “naïve” route vs. an “eco” route, it highlights CO₂ savings and smarter delivery planning.
 
-First, run the development server:
+<p align="center">
+  <!-- Replace with your own demo GIF or screenshot -->
+  <img src="docs/demo.gif" alt="Green‑Path Demo" width="800" />
+</p>
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+---
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🚀 Features
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+- **Order Placement**  
+  Interactive map-based address picker for users to select delivery locations.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Batching Logic**  
+  Group multiple orders into delivery batches behind the scenes to minimize trips.
 
-## Learn More
+- **Dual‑Route Visualization**  
+  - 🌿 **Eco Route:** Multi‑color polylines showing energy‑efficient path segments.  
+  - 🛣️ **Naïve Route:** Red dashed line for standard shortest‑path routing.
 
-To learn more about Next.js, take a look at the following resources:
+- **Truck Animation**  
+  Real‑time moving truck marker animates along the chosen route.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Info Windows & Labels**  
+  Click on markers to view order details; orders are labeled A, B, C… for clarity.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Legend & Controls**  
+  Toggle between “Eco” and “Naïve” views; map auto‑fits bounds on load.
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🛠 Tech Stack
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Framework:** Next.js (App Router)  
+- **Language:** TypeScript & React  
+- **Styling:** Tailwind CSS & Framer Motion  
+- **Maps:** Google Maps JavaScript API via `@react-google-maps/api`  
+- **Animation:** requestAnimationFrame (truck), Framer Motion (UI)  
+- **Icons & UI:** lucide‑react, canvas‑confetti  
+
+---
+
+## ⚙️ Quick Start
+
+1. **Clone the repo**  
+   ```bash
+   git clone https://github.com/shivapreetham/green-path.git
+   cd green-path
